@@ -10,12 +10,15 @@ import { SoundService } from '../sound.service';
   imports: [CommonModule],
   template: `
     <div class="roulette-container glass-panel">
-      <!-- Pointer -->
-      <div class="pointer">▼</div>
-      
       <!-- The Wheel -->
-      <div class="wheel-box" [style.transform]="'rotate(' + currentRotation + 'deg)'" [style.transition-duration.ms]="spinningDuration" (transitionend)="onTransitionEnd()">
-        <canvas #wheelCanvas width="400" height="400"></canvas>
+      <div class="wheel-wrapper">
+        <div class="pointer">▼</div>
+        
+        <div class="wheel-box" [style.transform]="'rotate(' + currentRotation + 'deg)'" [style.transition-duration.ms]="spinningDuration" (transitionend)="onTransitionEnd()">
+          <canvas #wheelCanvas width="600" height="600"></canvas>
+        </div>
+        
+        <div class="wheel-overlay"></div>
       </div>
 
       <button class="glass-button spin-btn" (click)="spin()" [disabled]="isSpinning || items.length === 0">
@@ -28,44 +31,72 @@ import { SoundService } from '../sound.service';
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 30px;
       position: relative;
       background: rgba(10, 10, 26, 0.4);
+      padding: 2rem;
+      border-radius: 20px;
+    }
+    .wheel-wrapper {
+      position: relative;
+      width: 630px;
+      height: 630px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #3a3a5a, #161625);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8),
+                  inset 0 6px 12px rgba(255,255,255,0.2),
+                  inset 0 -6px 12px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .wheel-box {
-      width: 400px;
-      height: 400px;
+      width: 600px;
+      height: 600px;
       border-radius: 50%;
-      box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), inset 0 0 20px rgba(0,0,0,0.8);
-      border: 6px solid rgba(255, 255, 255, 0.2);
       overflow: hidden;
       transition-property: transform;
       transition-timing-function: cubic-bezier(0.2, 0.1, 0.1, 1);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+    }
+    .wheel-overlay {
+      position: absolute;
+      top: 15px; left: 15px;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      pointer-events: none;
+      /* Iluminación 3D (highlight arriba-izquierda, sombra abajo-derecha) */
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 30%, rgba(0,0,0,0.4) 80%, rgba(0,0,0,0.7) 100%);
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.9), inset 0 0 8px rgba(255,255,255,0.3);
+      z-index: 5;
     }
     .pointer {
       position: absolute;
-      top: 10px;
+      top: -25px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 48px;
+      font-size: 64px;
       color: #fbbf24;
       z-index: 10;
-      text-shadow: 0 4px 6px rgba(0,0,0,0.8);
-      filter: drop-shadow(0 0 8px rgba(251, 191, 36, 1));
+      text-shadow: 0 4px 10px rgba(0,0,0,0.9), 0 -2px 4px rgba(255,255,255,0.6);
+      filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.8));
     }
     .spin-btn {
       font-size: 1.25rem;
-      padding: 1rem 2.5rem;
+      padding: 1rem 3.5rem;
       border-radius: 30px;
       text-transform: uppercase;
       letter-spacing: 2px;
       margin-top: 10px;
       width: 100%;
+      max-width: 350px;
       font-weight: 800;
+      box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
     }
     .spin-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      box-shadow: none;
     }
   `]
 })
@@ -127,7 +158,7 @@ export class RouletteComponent implements OnChanges {
     const numItems = this.items.length;
     if (numItems === 0) {
       ctx.beginPath();
-      ctx.arc(200, 200, 200, 0, 2 * Math.PI);
+      ctx.arc(300, 300, 300, 0, 2 * Math.PI);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.fill();
       return;
@@ -140,8 +171,8 @@ export class RouletteComponent implements OnChanges {
       const angleEnd = angleStart + anglePerItem;
 
       ctx.beginPath();
-      ctx.moveTo(200, 200);
-      ctx.arc(200, 200, 200, angleStart, angleEnd);
+      ctx.moveTo(300, 300);
+      ctx.arc(300, 300, 300, angleStart, angleEnd);
       ctx.fillStyle = this.colors[i % this.colors.length];
       ctx.fill();
       
@@ -150,25 +181,25 @@ export class RouletteComponent implements OnChanges {
       ctx.stroke();
 
       ctx.save();
-      ctx.translate(200, 200);
+      ctx.translate(300, 300);
       ctx.rotate(angleStart + anglePerItem / 2);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 22px Outfit";
+      ctx.font = "bold 32px Outfit";
       ctx.shadowColor = "rgba(0,0,0,0.5)";
       ctx.shadowBlur = 4;
       ctx.shadowOffsetX = 1;
       ctx.shadowOffsetY = 1;
-      ctx.fillText(this.items[i].name, 180, 7);
+      ctx.fillText(this.items[i].name, 275, 10);
       
       const img = this.loadedImages.get(this.items[i].avatarUrl);
       if (img) {
         ctx.shadowColor = "transparent";
         ctx.beginPath();
-        const picSize = 34;
-        ctx.arc(50, 0, picSize / 2, 0, Math.PI * 2);
+        const picSize = 64;
+        ctx.arc(100, 0, picSize / 2, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(img, 50 - picSize / 2, -picSize / 2, picSize, picSize);
+        ctx.drawImage(img, 100 - picSize / 2, -picSize / 2, picSize, picSize);
       }
       ctx.restore();
     }

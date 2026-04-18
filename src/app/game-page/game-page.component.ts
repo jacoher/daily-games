@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ParticipantService } from '../participant.service';
@@ -15,7 +15,7 @@ import { Participant } from '../participant.model';
       
       <div class="roulette-wrapper">
         <app-roulette 
-          [items]="participantService.participants" 
+          [items]="activeParticipants" 
           [speedMultiplier]="participantService.speedMultiplier"
           (winnerSelected)="onWinnerSelected($event)">
         </app-roulette>
@@ -35,10 +35,10 @@ import { Participant } from '../participant.model';
           
           <div class="winner-actions">
             <button class="glass-button action-btn" (click)="continuar()">
-              Continuar <br><small>(Mantener en lista)</small>
+              Continuar <br><small>(Mantener en la ruleta)</small>
             </button>
             <button class="glass-button action-btn danger" (click)="eliminarGanador()">
-              Eliminar Ganador <br><small>(Quitar de la lista)</small>
+              Quitar de la ruleta <br><small>(Solo por esta partida)</small>
             </button>
           </div>
         </div>
@@ -51,20 +51,20 @@ import { Participant } from '../participant.model';
     .game-container {
       position: relative;
       width: 100vw;
-      height: 70vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+      margin-top: 2rem;
     }
     .back-btn {
       position: absolute;
-      top: 0px;
+      top: -60px;
       left: 20px;
       z-index: 50;
     }
     .roulette-wrapper {
-      transform: scale(1.2);
+      margin-top: 2rem;
     }
     
     .winner-modal-backdrop {
@@ -166,11 +166,19 @@ import { Participant } from '../participant.model';
     }
   `]
 })
-export class GamePageComponent {
+export class GamePageComponent implements OnInit {
   winner: Participant | null = null;
   showRocket = false;
+  activeParticipants: Participant[] = [];
 
   constructor(public participantService: ParticipantService, private router: Router) {}
+
+  ngOnInit() {
+    this.activeParticipants = [...this.participantService.participants];
+    if (this.activeParticipants.length === 0) {
+      this.router.navigate(['/']);
+    }
+  }
 
   goBack() {
     this.router.navigate(['/']);
@@ -190,10 +198,8 @@ export class GamePageComponent {
 
   eliminarGanador() {
     if (this.winner) {
-      const index = this.participantService.participants.findIndex(p => p.name === this.winner!.name);
-      if (index > -1) {
-        this.participantService.removeParticipant(index);
-      }
+      // Remove only from local active list, keep in database/service
+      this.activeParticipants = this.activeParticipants.filter(p => p.name !== this.winner!.name);
     }
     this.winner = null;
     this.showRocket = false;

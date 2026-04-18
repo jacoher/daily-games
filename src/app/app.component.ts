@@ -15,7 +15,7 @@ import { RouterOutlet } from '@angular/router';
     </div>
     
     <div class="app-container">
-      <h1 class="title">🌌 Ruleta Cósmica 🌌</h1>
+      <h1 class="title">🌌 Ruleta Cósmica <span class="version">v1.0</span> 🌌</h1>
       <router-outlet></router-outlet>
     </div>
   `,
@@ -42,6 +42,21 @@ import { RouterOutlet } from '@angular/router';
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+    .version {
+      font-size: 1.2rem;
+      background: rgba(251, 191, 36, 0.15);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      -webkit-text-fill-color: #fbbf24;
+      text-shadow: none;
+      letter-spacing: 1px;
     }
     
     /* Background Styles */

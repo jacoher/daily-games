@@ -19,7 +19,10 @@
     "@angular/platform-browser-dynamic": "^18.2.0",
     "@angular/router": "^18.2.0",
     "canvas-confetti": "^1.9.4",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "rxjs": "~7.8.0",
+    "sqlite3": "^6.0.1",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.10"
   },

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -106,11 +106,15 @@ import { ParticipantService } from '../participant.service';
     .hint { margin-top: 1rem; opacity: 0.8; }
   `]
 })
-export class SetupComponent {
+export class SetupComponent implements OnInit {
   newName = '';
   newAvatarUrl = '';
 
   constructor(public participantService: ParticipantService, private router: Router) {}
+
+  ngOnInit() {
+    this.participantService.loadParticipants();
+  }
 
   getSpeedLabel() {
     if (this.participantService.speedMultiplier < 0.8) return 'Rápida 🚀';
