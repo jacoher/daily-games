@@ -33,7 +33,7 @@ import { RouterOutlet } from '@angular/router';
       align-items: center;
     }
     .title {
-      font-size: 3.5rem;
+      font-size: clamp(2rem, 8vw, 3.5rem);
       font-weight: 800;
       margin-bottom: 2rem;
       text-align: center;

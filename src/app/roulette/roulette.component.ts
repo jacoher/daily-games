@@ -36,11 +36,15 @@ import { SoundService } from '../sound.service';
       background: rgba(10, 10, 26, 0.4);
       padding: 2rem;
       border-radius: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .wheel-wrapper {
       position: relative;
-      width: 630px;
-      height: 630px;
+      width: 100%;
+      max-width: 630px;
+      aspect-ratio: 1 / 1;
       border-radius: 50%;
       background: linear-gradient(145deg, #3a3a5a, #161625);
       box-shadow: 0 20px 50px rgba(0,0,0,0.8),
@@ -51,18 +55,24 @@ import { SoundService } from '../sound.service';
       justify-content: center;
     }
     .wheel-box {
-      width: 600px;
-      height: 600px;
+      width: calc(100% - 30px);
+      height: calc(100% - 30px);
       border-radius: 50%;
       overflow: hidden;
       transition-property: transform;
       transition-timing-function: cubic-bezier(0.2, 0.1, 0.1, 1);
       box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
     }
+    .wheel-box canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
     .wheel-overlay {
       position: absolute;
       top: 15px; left: 15px;
-      width: 600px; height: 600px;
+      width: calc(100% - 30px); 
+      height: calc(100% - 30px);
       border-radius: 50%;
       pointer-events: none;
       /* Iluminación 3D (highlight arriba-izquierda, sombra abajo-derecha) */
@@ -72,18 +82,18 @@ import { SoundService } from '../sound.service';
     }
     .pointer {
       position: absolute;
-      top: -25px;
+      top: -20px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 64px;
+      font-size: clamp(40px, 8vw, 64px);
       color: #fbbf24;
       z-index: 10;
       text-shadow: 0 4px 10px rgba(0,0,0,0.9), 0 -2px 4px rgba(255,255,255,0.6);
       filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.8));
     }
     .spin-btn {
-      font-size: 1.25rem;
-      padding: 1rem 3.5rem;
+      font-size: clamp(1rem, 4vw, 1.25rem);
+      padding: 1rem 2rem;
       border-radius: 30px;
       text-transform: uppercase;
       letter-spacing: 2px;

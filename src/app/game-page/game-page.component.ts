@@ -65,6 +65,10 @@ import { Participant } from '../participant.model';
     }
     .roulette-wrapper {
       margin-top: 2rem;
+      width: 100%;
+      max-width: 630px;
+      padding: 0 1rem;
+      box-sizing: border-box;
     }
     
     .winner-modal-backdrop {
