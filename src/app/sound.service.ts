@@ -70,6 +70,33 @@ export class SoundService {
       this.isSpinning = false;
   }
 
+  playClack(velocity: number) {
+    this.initAudio();
+    if (!this.audioCtx) return;
+
+    // Solo reproducir si la fuerza del choque es significativa
+    if (velocity < 1) return;
+
+    const osc = this.audioCtx.createOscillator();
+    const gainNode = this.audioCtx.createGain();
+
+    // Sonido percusivo corto (clack de madera/plástico)
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(600 + (Math.random() * 200), this.audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, this.audioCtx.currentTime + 0.03);
+
+    // Volumen basado en la fuerza del impacto
+    const volume = Math.min(velocity / 15, 0.4);
+    gainNode.gain.setValueAtTime(volume, this.audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.05);
+
+    osc.connect(gainNode);
+    gainNode.connect(this.audioCtx.destination);
+
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + 0.05);
+  }
+
   playSpinningSound(durationMs: number) {
     this.isSpinning = true;
     let delay = 30; // Initial delay between ticks in ms
