@@ -57,6 +57,9 @@ import { ParticipantService } from '../participant.service';
          <button class="glass-button play-btn" (click)="goToRoulette()" [disabled]="participantService.participants.length === 0">
            🚀 ¡IR A LA RULETA!
          </button>
+         <button class="glass-button play-btn marble-btn" (click)="goToMarbles()" [disabled]="participantService.participants.length === 0">
+           🏁 CARRERA EN MARTE
+         </button>
          <p class="hint" *ngIf="participantService.participants.length === 0">Agrega al menos un participante para comenzar</p>
       </div>
     </div>
@@ -102,6 +105,13 @@ import { ParticipantService } from '../participant.service';
       transform: scale(1.05);
       box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
     }
+    .marble-btn {
+      margin-top: 15px;
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    }
+    .marble-btn:hover:not(:disabled) {
+      box-shadow: 0 0 30px rgba(255, 75, 43, 0.6);
+    }
     .play-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #555; }
     .hint { margin-top: 1rem; opacity: 0.8; }
   `]
@@ -139,6 +149,12 @@ export class SetupComponent implements OnInit {
   goToRoulette() {
     if (this.participantService.participants.length > 0) {
       this.router.navigate(['/roulette']);
+    }
+  }
+
+  goToMarbles() {
+    if (this.participantService.participants.length > 0) {
+      this.router.navigate(['/marbles']);
     }
   }
 }
