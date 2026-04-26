@@ -622,13 +622,13 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.restore();
 
         if (pos.y > this.cameraY - 50) {
-          const shortName = m.participant.name.substring(0, 3).toUpperCase();
+          const fullName = m.participant.name;
           context.font = 'bold 14px Arial'; 
           context.textAlign = 'center';
           context.fillStyle = '#ffffff';
           context.shadowColor = 'rgba(0,0,0,0.8)';
           context.shadowBlur = 4;
-          context.fillText(shortName, pos.x, pos.y - r - 10);
+          context.fillText(fullName, pos.x, pos.y - r - 10);
           context.shadowBlur = 0; 
         }
       });
