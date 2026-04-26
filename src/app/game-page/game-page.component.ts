@@ -11,7 +11,7 @@ import { Participant } from '../participant.model';
   imports: [CommonModule, RouletteComponent],
   template: `
     <div class="game-container">
-      <h1 class="main-title">🌌 Ruleta Cósmica <span class="version">v1.0</span> 🌌</h1>
+      <h1 class="main-title">🌌 Ruleta Cósmica 🌌</h1>
       <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
       
       <div class="roulette-wrapper">

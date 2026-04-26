@@ -59,7 +59,7 @@ import { ParticipantService } from '../participant.service';
            🚀 ¡IR A LA RULETA!
          </button>
          <button class="glass-button play-btn marble-btn" (click)="goToMarbles()" [disabled]="participantService.participants.length === 0">
-           🏁 CARRERA EN MARTE
+           🏁 ¡IR A MARBLE RACE!
          </button>
          <p class="hint" *ngIf="participantService.participants.length === 0">Agrega al menos un participante para comenzar</p>
       </div>
@@ -147,7 +147,7 @@ export class SetupComponent implements OnInit {
   newName = '';
   newAvatarUrl = '';
 
-  constructor(public participantService: ParticipantService, private router: Router) {}
+  constructor(public participantService: ParticipantService, private router: Router) { }
 
   ngOnInit() {
     this.participantService.loadParticipants();
