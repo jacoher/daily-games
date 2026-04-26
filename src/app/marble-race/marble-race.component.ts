@@ -354,20 +354,22 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     }
 
     // Funnels at the bottom
-    const funnelLeft = Bodies.rectangle(width * 0.2, trackHeight - 150, width * 0.5, 40, {
+    const funnelLeft = Bodies.rectangle(width * 0.15, trackHeight - 150, width * 0.6, 40, {
       isStatic: true,
-      angle: Math.PI / 5,
+      angle: Math.PI / 3.5, // Steeper angle
+      friction: 0, // No friction so they slide perfectly
       render: { fillStyle: '#3d160c', strokeStyle: '#1a0803', lineWidth: 4 }
     });
-    const funnelRight = Bodies.rectangle(width * 0.8, trackHeight - 150, width * 0.5, 40, {
+    const funnelRight = Bodies.rectangle(width * 0.85, trackHeight - 150, width * 0.6, 40, {
       isStatic: true,
-      angle: -Math.PI / 5,
+      angle: -Math.PI / 3.5,
+      friction: 0,
       render: { fillStyle: '#3d160c', strokeStyle: '#1a0803', lineWidth: 4 }
     });
     Composite.add(this.engine.world, [funnelLeft, funnelRight]);
 
     // Finish Line Sensor
-    const finishLine = Bodies.rectangle(width / 2, trackHeight - 20, width, 40, {
+    const finishLine = Bodies.rectangle(width / 2, trackHeight - 20, width * 1.5, 40, {
       isStatic: true,
       isSensor: true,
       label: 'finishLine',
