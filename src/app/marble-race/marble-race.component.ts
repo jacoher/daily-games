@@ -20,7 +20,6 @@ import Matter from 'matter-js';
 
       <div class="canvas-wrapper">
         <canvas #raceCanvas></canvas>
-        <div class="dirt-overlay"></div>
         
         <!-- Podio y resultados -->
         <div class="results-modal" *ngIf="raceFinished">
@@ -82,19 +81,9 @@ import Matter from 'matter-js';
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.9);
-      /* Textura de tierra de marte */
-      background-color: #5c2014;
-      background-image: 
-        radial-gradient(circle at 20% 30%, rgba(0,0,0,0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(0,0,0,0.4) 0%, transparent 50%);
+      background: transparent;
     }
-    .dirt-overlay {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23n)" opacity="0.15"/></svg>');
-      pointer-events: none;
-      z-index: 1;
-    }
+
     canvas {
       position: relative;
       z-index: 2;

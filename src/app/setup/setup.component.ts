@@ -10,6 +10,7 @@ import { ParticipantService } from '../participant.service';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="setup-container">
+      <h1 class="main-title">🌌 Daily Games <span class="version">v1.0</span> 🌌</h1>
       <div class="sidebar glass-panel">
         <h2>Participantes</h2>
         
@@ -65,6 +66,32 @@ import { ParticipantService } from '../participant.service';
     </div>
   `,
   styles: [`
+    .main-title {
+      font-size: clamp(2rem, 8vw, 3.5rem);
+      font-weight: 800;
+      margin-bottom: 2rem;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+      background: linear-gradient(to right, #a855f7, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+    .version {
+      font-size: 1.2rem;
+      background: rgba(251, 191, 36, 0.15);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      -webkit-text-fill-color: #fbbf24;
+      text-shadow: none;
+      letter-spacing: 1px;
+    }
     .setup-container {
       display: flex;
       flex-direction: column;

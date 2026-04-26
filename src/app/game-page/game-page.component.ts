@@ -11,6 +11,7 @@ import { Participant } from '../participant.model';
   imports: [CommonModule, RouletteComponent],
   template: `
     <div class="game-container">
+      <h1 class="main-title">🌌 Ruleta Cósmica <span class="version">v1.0</span> 🌌</h1>
       <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
       
       <div class="roulette-wrapper">
@@ -55,11 +56,38 @@ import { Participant } from '../participant.model';
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
+      justify-content: flex-start;
       margin-top: 2rem;
+    }
+    .main-title {
+      font-size: clamp(2rem, 8vw, 3.5rem);
+      font-weight: 800;
+      margin-bottom: 2rem;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+      background: linear-gradient(to right, #a855f7, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+    .version {
+      font-size: 1.2rem;
+      background: rgba(251, 191, 36, 0.15);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      -webkit-text-fill-color: #fbbf24;
+      text-shadow: none;
+      letter-spacing: 1px;
     }
     .back-btn {
       position: absolute;
-      top: -60px;
+      top: 0px;
       left: 20px;
       z-index: 50;
     }
