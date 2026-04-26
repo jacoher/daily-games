@@ -14,7 +14,7 @@ import Matter from 'matter-js';
     <div class="race-container">
       <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
       <div class="race-header">
-        <h2 class="race-title">🔴 Carrera en Marte 3D 🔴</h2>
+        <h2 class="race-title">🔴MARBLE RACE🔴</h2>
         <button class="glass-button start-btn" (click)="startRace()" *ngIf="!raceStarted">¡INICIAR CARRERA!</button>
       </div>
 
@@ -161,21 +161,21 @@ import Matter from 'matter-js';
 })
 export class MarbleRaceComponent implements OnInit, OnDestroy {
   @ViewChild('raceCanvas', { static: true }) raceCanvas!: ElementRef<HTMLCanvasElement>;
-  
+
   engine!: Matter.Engine;
   render!: Matter.Render;
   runner!: Matter.Runner;
-  
+
   participants: Participant[] = [];
-  
+
   raceStarted = false;
   raceFinished = false;
   startTime = 0;
-  
+
   results: { participant: Participant, color: string, time: number }[] = [];
-  
+
   private colors = [
-    '#ff3b30', '#ff9500', '#ffcc00', '#4cd964', 
+    '#ff3b30', '#ff9500', '#ffcc00', '#4cd964',
     '#5ac8fa', '#007aff', '#5856d6', '#ff2d55',
     '#ffffff', '#8e8e93', '#ff8a65', '#06b6d4'
   ];
@@ -188,10 +188,10 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
   private cameraY = 0;
 
   constructor(
-    public participantService: ParticipantService, 
+    public participantService: ParticipantService,
     private soundService: SoundService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.participants = [...this.participantService.participants];
@@ -223,21 +223,21 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     const canvas = this.raceCanvas.nativeElement;
     const width = canvas.parentElement?.clientWidth || 800;
     const viewHeight = canvas.parentElement?.clientHeight || 600;
-    
+
     // Massive track length
-    const trackHeight = 4000; 
+    const trackHeight = 4000;
 
     const Engine = Matter.Engine,
-          Render = Matter.Render,
-          Runner = Matter.Runner,
-          Composite = Matter.Composite,
-          Bodies = Matter.Bodies,
-          Constraint = Matter.Constraint,
-          Body = Matter.Body,
-          Events = Matter.Events;
+      Render = Matter.Render,
+      Runner = Matter.Runner,
+      Composite = Matter.Composite,
+      Bodies = Matter.Bodies,
+      Constraint = Matter.Constraint,
+      Body = Matter.Body,
+      Events = Matter.Events;
 
     this.engine = Engine.create();
-    this.engine.gravity.y = 1.2; 
+    this.engine.gravity.y = 1.2;
 
     // Make canvas logical size match its CSS size to avoid blurriness
     canvas.width = width;
@@ -260,8 +260,8 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     Runner.run(this.runner, this.engine);
 
     // Walls
-    const wallOptions = { 
-      isStatic: true, 
+    const wallOptions = {
+      isStatic: true,
       render: { fillStyle: '#3d160c', strokeStyle: '#260c05', lineWidth: 4 },
       restitution: 0.5
     };
@@ -273,26 +273,26 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     ]);
 
     // Distribute Obstacles (Rocks/Polygons) across the entire 4000px height
-    const rockRows = 40; 
+    const rockRows = 40;
     const rockCols = 5;
     const spacingX = width / rockCols;
-    const spacingY = (trackHeight - 400) / rockRows; 
+    const spacingY = (trackHeight - 400) / rockRows;
 
     for (let row = 0; row < rockRows; row++) {
       const offsetX = (row % 2 === 0) ? spacingX / 2 : 0;
       for (let col = 0; col < rockCols + 1; col++) {
         const x = col * spacingX + offsetX;
         const y = row * spacingY + 200;
-        
+
         // Skip some to create holes
         if (Math.random() > 0.6) continue;
 
-        const sides = Math.floor(Math.random() * 4) + 5; 
+        const sides = Math.floor(Math.random() * 4) + 5;
         const radius = 15 + Math.random() * 20; // Big rocks
-        
+
         const rock = Bodies.polygon(x, y, sides, radius, {
           isStatic: true,
-          render: { visible: false }, 
+          render: { visible: false },
           restitution: 0.4,
           friction: 0.2
         });
@@ -307,14 +307,14 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       const px = width * (0.2 + (Math.random() * 0.6));
       // Spread them from y=400 down to y=3600
       const py = 400 + (i * (3200 / numPropellers)) + (Math.random() * 100 - 50);
-      
+
       const spinner = Bodies.rectangle(px, py, 150 + Math.random() * 50, 20, {
         restitution: 0.8,
         friction: 0.1,
-        render: { visible: false }, 
-        collisionFilter: { group: -1 } 
+        render: { visible: false },
+        collisionFilter: { group: -1 }
       });
-      
+
       const constraint = Constraint.create({
         pointA: { x: px, y: py },
         bodyB: spinner,
@@ -322,7 +322,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         stiffness: 1,
         render: { visible: false }
       });
-      
+
       this.spinners.push(spinner);
       Composite.add(this.engine.world, [spinner, constraint]);
     }
@@ -333,7 +333,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     for (let i = 0; i < numAnimals; i++) {
       const startX = width * 0.5;
       const startY = 500 + (i * (3000 / numAnimals));
-      
+
       const animalBody = Bodies.circle(startX, startY, 25, {
         isStatic: false,
         restitution: 1.2, // Bouncy
@@ -379,18 +379,18 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
     // Prepare Marbles 
     this.participants.forEach((p, index) => {
-      const radius = 20; 
+      const radius = 20;
       const color = this.colors[index % this.colors.length];
-      const startX = (width / 2) + (Math.random() * 300 - 150); 
-      
+      const startX = (width / 2) + (Math.random() * 300 - 150);
+
       const marble = Bodies.circle(startX, -100 - (Math.random() * 300), radius, {
         restitution: 0.7,
         friction: 0.005,
         frictionAir: 0.015,
-        density: 0.05 + Math.random() * 0.02, 
+        density: 0.05 + Math.random() * 0.02,
         label: `marble-${index}`,
         render: {
-          visible: false 
+          visible: false
         }
       });
 
@@ -414,7 +414,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         if (bodyA.label === 'finishLine' || bodyB.label === 'finishLine') {
           const marbleBody = bodyA.label.startsWith('marble-') ? bodyA : bodyB;
           const marbleObj = this.marbleBodies.find(m => m.body.id === marbleBody.id);
-          
+
           if (marbleObj && !marbleObj.finished) {
             marbleObj.finished = true;
             const timeElapsed = (Date.now() - this.startTime) / 1000;
@@ -429,7 +429,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
               this.raceFinished = true;
             }
           }
-        } 
+        }
         else {
           const marbleObjA = this.marbleBodies.find(m => m.body.id === bodyA.id);
           const marbleObjB = this.marbleBodies.find(m => m.body.id === bodyB.id);
@@ -447,7 +447,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
     // CAMERA LOGIC & MOTORS
     Events.on(this.engine, 'beforeUpdate', () => {
-      
+
       // Update Propellers
       this.spinners.forEach((spinner, index) => {
         const dir = index % 2 === 0 ? 1 : -1;
@@ -481,7 +481,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
           // Clamp camera so it doesn't show past the bottom wall
           const maxCameraY = trackHeight - viewHeight + 100;
           targetY = Math.max(-200, Math.min(targetY, maxCameraY));
-          
+
           // Smooth interpolation
           this.cameraY += (targetY - this.cameraY) * 0.08;
 
@@ -497,7 +497,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     // Custom Pseudo-3D Rendering
     Events.on(this.render, 'afterRender', () => {
       const context = this.render.context;
-      
+
       // Since lookAt modifies render.bounds, we apply it to our custom drawing
       context.save();
       // Matter.js resets transform before afterRender. We must re-apply the translation.
@@ -517,7 +517,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
           else context.lineTo(v.x, v.y);
         });
         context.closePath();
-        
+
         const grad = context.createLinearGradient(rock.bounds.min.x, rock.bounds.min.y, rock.bounds.max.x, rock.bounds.max.y);
         grad.addColorStop(0, '#8c7368');
         grad.addColorStop(1, '#402a22');
@@ -535,21 +535,21 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.save();
         context.translate(spinner.position.x, spinner.position.y);
         context.rotate(spinner.angle);
-        
+
         const w = 150;
         const h = 20;
-        
+
         context.fillStyle = 'rgba(0,0,0,0.5)';
-        context.fillRect(-w/2 + 5, -h/2 + 10, w, h);
-        
-        const grad = context.createLinearGradient(-w/2, -h/2, w/2, h/2);
+        context.fillRect(-w / 2 + 5, -h / 2 + 10, w, h);
+
+        const grad = context.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
         grad.addColorStop(0, '#fca311');
         grad.addColorStop(1, '#d62828');
         context.fillStyle = grad;
-        context.fillRect(-w/2, -h/2, w, h);
+        context.fillRect(-w / 2, -h / 2, w, h);
         context.strokeStyle = '#000';
-        context.strokeRect(-w/2, -h/2, w, h);
-        
+        context.strokeRect(-w / 2, -h / 2, w, h);
+
         context.beginPath();
         context.arc(0, 0, 10, 0, Math.PI * 2);
         context.fillStyle = '#666';
@@ -566,11 +566,11 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.font = '50px Arial';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        
+
         context.shadowColor = 'rgba(0,0,0,0.8)';
         context.shadowBlur = 10;
         context.shadowOffsetY = 15;
-        
+
         context.save();
         context.translate(animal.body.position.x, animal.body.position.y);
         if (animal.dir === -1) {
@@ -578,7 +578,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         }
         context.fillText(animal.emoji, 0, 0);
         context.restore();
-        
+
         context.shadowBlur = 0;
         context.shadowOffsetY = 0;
       });
@@ -586,7 +586,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       // Draw Marbles
       this.marbleBodies.forEach(m => {
         if (m.finished) return;
-        
+
         const pos = m.body.position;
         const r = m.radius;
 
@@ -596,12 +596,12 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.fill();
 
         const grad = context.createRadialGradient(
-          pos.x - r * 0.3, pos.y - r * 0.3, r * 0.1, 
+          pos.x - r * 0.3, pos.y - r * 0.3, r * 0.1,
           pos.x, pos.y, r
         );
-        grad.addColorStop(0, '#ffffff'); 
-        grad.addColorStop(0.3, m.color); 
-        grad.addColorStop(1, '#000000'); 
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.3, m.color);
+        grad.addColorStop(1, '#000000');
 
         context.beginPath();
         context.arc(pos.x, pos.y, r, 0, Math.PI * 2);
@@ -623,13 +623,13 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
         if (pos.y > this.cameraY - 50) {
           const fullName = m.participant.name;
-          context.font = 'bold 14px Arial'; 
+          context.font = 'bold 14px Arial';
           context.textAlign = 'center';
           context.fillStyle = '#ffffff';
           context.shadowColor = 'rgba(0,0,0,0.8)';
           context.shadowBlur = 4;
           context.fillText(fullName, pos.x, pos.y - r - 10);
-          context.shadowBlur = 0; 
+          context.shadowBlur = 0;
         }
       });
 
