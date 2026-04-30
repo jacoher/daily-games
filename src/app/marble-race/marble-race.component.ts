@@ -292,7 +292,9 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         if (Math.random() > 0.35) continue;
 
         const sides = Math.floor(Math.random() * 4) + 5;
-        const radius = 12 + Math.random() * 15; // Rocas un poco más pequeñas
+        // Algunas rocas normales (10-20), algunas grandes (hasta 50)
+        const isGiant = Math.random() > 0.85; 
+        const radius = isGiant ? 30 + Math.random() * 20 : 10 + Math.random() * 15;
 
         const rock = Bodies.polygon(x, y, sides, radius, {
           isStatic: true,
