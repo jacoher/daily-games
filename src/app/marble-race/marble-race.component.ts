@@ -277,8 +277,8 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     ]);
 
     // Distribute Obstacles (Rocks/Polygons) across the entire 4000px height
-    const rockRows = 40;
-    const rockCols = 5;
+    const rockRows = 30; // Menos filas para más espacio vertical
+    const rockCols = 4; // Menos columnas para más espacio horizontal
     const spacingX = width / rockCols;
     const spacingY = (trackHeight - 400) / rockRows;
 
@@ -288,11 +288,11 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         const x = col * spacingX + offsetX;
         const y = row * spacingY + 200;
 
-        // Skip some to create holes
-        if (Math.random() > 0.6) continue;
+        // Mayor probabilidad de saltar para crear más huecos
+        if (Math.random() > 0.35) continue;
 
         const sides = Math.floor(Math.random() * 4) + 5;
-        const radius = 15 + Math.random() * 20; // Big rocks
+        const radius = 12 + Math.random() * 15; // Rocas un poco más pequeñas
 
         const rock = Bodies.polygon(x, y, sides, radius, {
           isStatic: true,
