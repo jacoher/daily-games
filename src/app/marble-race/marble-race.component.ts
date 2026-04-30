@@ -81,7 +81,8 @@ import Matter from 'matter-js';
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.9);
-      background: transparent;
+      background: rgba(0,0,0,0.1);
+      backdrop-filter: blur(8px);
     }
     canvas {
       position: relative;
