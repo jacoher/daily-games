@@ -236,7 +236,9 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       Bodies = Matter.Bodies,
       Constraint = Matter.Constraint,
       Body = Matter.Body,
-      Events = Matter.Events;
+      Events = Matter.Events,
+      Mouse = Matter.Mouse,
+      MouseConstraint = Matter.MouseConstraint;
 
     this.engine = Engine.create();
     this.engine.gravity.y = 1.2;
@@ -305,10 +307,12 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
     // Add Motorized Propellers (Hélices)
     const numPropellers = 15;
+    const propellerPositions: {x: number, y: number}[] = [];
     for (let i = 0; i < numPropellers; i++) {
       const px = width * (0.2 + (Math.random() * 0.6));
       // Spread them from y=400 down to y=3600
       const py = 400 + (i * (3200 / numPropellers)) + (Math.random() * 100 - 50);
+      propellerPositions.push({x: px, y: py});
 
       const spinner = Bodies.rectangle(px, py, 150 + Math.random() * 50, 20, {
         restitution: 0.8,
@@ -358,8 +362,27 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     // Add Pinball Bumpers (Rebotadores)
     const numBumpers = 25;
     for (let i = 0; i < numBumpers; i++) {
-      const bx = width * 0.1 + Math.random() * (width * 0.8);
-      const by = 800 + (i * (2800 / numBumpers)) + (Math.random() * 100);
+      let bx = 0;
+      let by = 0;
+      let valid = false;
+      let attempts = 0;
+
+      while (!valid && attempts < 20) {
+        bx = width * 0.1 + Math.random() * (width * 0.8);
+        by = 800 + (i * (2800 / numBumpers)) + (Math.random() * 100);
+        valid = true;
+        
+        // Evita que un bumper quede cerca de una hélice (menos de 150px)
+        for (const p of propellerPositions) {
+          const dx = bx - p.x;
+          const dy = by - p.y;
+          if (Math.sqrt(dx * dx + dy * dy) < 150) {
+            valid = false;
+            break;
+          }
+        }
+        attempts++;
+      }
       
       const bumper = Bodies.circle(bx, by, 30, {
         isStatic: true,
@@ -480,30 +503,17 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Desatascar con click
-    canvas.addEventListener('click', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-
-      const clickX = (e.clientX - rect.left) * scaleX;
-      const clickY = (e.clientY - rect.top) * scaleY + this.cameraY;
-
-      this.marbleBodies.forEach(m => {
-        if (m.finished) return;
-        const dx = m.body.position.x - clickX;
-        const dy = m.body.position.y - clickY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        // Si hacen click cerca de una bola o la bola está atascada
-        if (dist < 80) {
-          Matter.Body.applyForce(m.body, m.body.position, {
-            x: (Math.random() - 0.5) * 0.08,
-            y: -0.15 // Fuerte salto hacia arriba
-          });
-        }
-      });
+    // Añadir MouseConstraint para poder arrastrar las bolas
+    const mouse = Mouse.create(this.render.canvas);
+    const mouseConstraint = MouseConstraint.create(this.engine, {
+      mouse: mouse,
+      constraint: {
+        stiffness: 0.2,
+        render: { visible: false }
+      }
     });
+    Composite.add(this.engine.world, mouseConstraint);
+    this.render.mouse = mouse;
 
     // CAMERA LOGIC & MOTORS
     Events.on(this.engine, 'beforeUpdate', () => {
