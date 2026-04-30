@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ParticipantService } from '../participant.service';
 import { RouletteComponent } from '../roulette/roulette.component';
@@ -8,11 +9,16 @@ import { Participant } from '../participant.model';
 @Component({
   selector: 'app-game-page',
   standalone: true,
-  imports: [CommonModule, RouletteComponent],
+  imports: [CommonModule, RouletteComponent, FormsModule],
   template: `
     <div class="game-container">
       <h1 class="main-title">🌌 Ruleta Cósmica 🌌</h1>
       <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
+      
+      <div class="config-section glass-panel">
+        <label>Velocidad de Giro: {{ getSpeedLabel() }}</label>
+        <input type="range" min="0.5" max="2" step="0.1" [(ngModel)]="participantService.speedMultiplier" style="width: 100%;">
+      </div>
       
       <div class="roulette-wrapper">
         <app-roulette 
@@ -97,6 +103,13 @@ import { Participant } from '../participant.model';
       max-width: 630px;
       padding: 0 1rem;
       box-sizing: border-box;
+    }
+    .config-section {
+      margin-top: 1rem;
+      padding: 1rem;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
     }
     
     .winner-modal-backdrop {
@@ -214,6 +227,12 @@ export class GamePageComponent implements OnInit {
 
   goBack() {
     this.router.navigate(['/']);
+  }
+
+  getSpeedLabel() {
+    if (this.participantService.speedMultiplier < 0.8) return 'Rápida 🚀';
+    if (this.participantService.speedMultiplier > 1.2) return 'Lenta 🐢';
+    return 'Normal 🛸';
   }
 
   onWinnerSelected(winner: Participant) {

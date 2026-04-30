@@ -14,7 +14,7 @@ import Matter from 'matter-js';
     <div class="race-container">
       <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
       <div class="race-header">
-        <h2 class="race-title">🔴MARBLE RACE🔴</h2>
+        <h2 class="race-title">Marble Race</h2>
         <button class="glass-button start-btn" (click)="startRace()" *ngIf="!raceStarted">¡INICIAR CARRERA!</button>
       </div>
 
@@ -44,7 +44,7 @@ import Matter from 'matter-js';
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #0a0402; /* Will be covered by global space bg */
+      background: transparent;
       padding: 2rem 0;
       box-sizing: border-box;
     }
@@ -81,7 +81,8 @@ import Matter from 'matter-js';
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.9);
-      background: transparent;
+      background: rgba(0,0,0,0.1);
+      backdrop-filter: blur(8px);
     }
     canvas {
       position: relative;
@@ -184,6 +185,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
   private spinners: Matter.Body[] = [];
   private rocks: Matter.Body[] = [];
   private animals: { body: Matter.Body, emoji: string, dir: number, speed: number }[] = [];
+  private bumpers: Matter.Body[] = [];
 
   private cameraY = 0;
 
@@ -234,7 +236,9 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       Bodies = Matter.Bodies,
       Constraint = Matter.Constraint,
       Body = Matter.Body,
-      Events = Matter.Events;
+      Events = Matter.Events,
+      Mouse = Matter.Mouse,
+      MouseConstraint = Matter.MouseConstraint;
 
     this.engine = Engine.create();
     this.engine.gravity.y = 1.2;
@@ -273,8 +277,8 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     ]);
 
     // Distribute Obstacles (Rocks/Polygons) across the entire 4000px height
-    const rockRows = 40;
-    const rockCols = 5;
+    const rockRows = 30; // Menos filas para más espacio vertical
+    const rockCols = 4; // Menos columnas para más espacio horizontal
     const spacingX = width / rockCols;
     const spacingY = (trackHeight - 400) / rockRows;
 
@@ -284,11 +288,13 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         const x = col * spacingX + offsetX;
         const y = row * spacingY + 200;
 
-        // Skip some to create holes
-        if (Math.random() > 0.6) continue;
+        // Mayor probabilidad de saltar para crear más huecos
+        if (Math.random() > 0.35) continue;
 
         const sides = Math.floor(Math.random() * 4) + 5;
-        const radius = 15 + Math.random() * 20; // Big rocks
+        // Algunas rocas normales (10-20), algunas grandes (hasta 50)
+        const isGiant = Math.random() > 0.85; 
+        const radius = isGiant ? 30 + Math.random() * 20 : 10 + Math.random() * 15;
 
         const rock = Bodies.polygon(x, y, sides, radius, {
           isStatic: true,
@@ -303,10 +309,12 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
     // Add Motorized Propellers (Hélices)
     const numPropellers = 15;
+    const propellerPositions: {x: number, y: number}[] = [];
     for (let i = 0; i < numPropellers; i++) {
       const px = width * (0.2 + (Math.random() * 0.6));
       // Spread them from y=400 down to y=3600
       const py = 400 + (i * (3200 / numPropellers)) + (Math.random() * 100 - 50);
+      propellerPositions.push({x: px, y: py});
 
       const spinner = Bodies.rectangle(px, py, 150 + Math.random() * 50, 20, {
         restitution: 0.8,
@@ -351,6 +359,42 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         speed: 2 + Math.random() * 3
       });
       Composite.add(this.engine.world, animalBody);
+    }
+
+    // Add Pinball Bumpers (Rebotadores)
+    const numBumpers = 25;
+    for (let i = 0; i < numBumpers; i++) {
+      let bx = 0;
+      let by = 0;
+      let valid = false;
+      let attempts = 0;
+
+      while (!valid && attempts < 20) {
+        bx = width * 0.1 + Math.random() * (width * 0.8);
+        by = 800 + (i * (2800 / numBumpers)) + (Math.random() * 100);
+        valid = true;
+        
+        // Evita que un bumper quede cerca de una hélice (menos de 150px)
+        for (const p of propellerPositions) {
+          const dx = bx - p.x;
+          const dy = by - p.y;
+          if (Math.sqrt(dx * dx + dy * dy) < 150) {
+            valid = false;
+            break;
+          }
+        }
+        attempts++;
+      }
+      
+      const bumper = Bodies.circle(bx, by, 30, {
+        isStatic: true,
+        restitution: 2.0, // High bounce like a pinball bumper
+        friction: 0,
+        label: 'bumper',
+        render: { visible: false }
+      });
+      this.bumpers.push(bumper);
+      Composite.add(this.engine.world, bumper);
     }
 
     // Funnels at the bottom
@@ -430,6 +474,22 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
             }
           }
         }
+        else if (bodyA.label === 'bumper' || bodyB.label === 'bumper') {
+          const marbleBody = bodyA.label === 'bumper' ? bodyB : bodyA;
+          const bumperBody = bodyA.label === 'bumper' ? bodyA : bodyB;
+          
+          if (marbleBody.label && marbleBody.label.startsWith('marble-')) {
+            const dx = marbleBody.position.x - bumperBody.position.x;
+            const dy = marbleBody.position.y - bumperBody.position.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            
+            Matter.Body.applyForce(marbleBody, marbleBody.position, {
+              x: (dx / dist) * 0.06,
+              y: (dy / dist) * 0.06
+            });
+            this.soundService.playClack(10);
+          }
+        }
         else {
           const marbleObjA = this.marbleBodies.find(m => m.body.id === bodyA.id);
           const marbleObjB = this.marbleBodies.find(m => m.body.id === bodyB.id);
@@ -444,6 +504,18 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         }
       }
     });
+
+    // Añadir MouseConstraint para poder arrastrar las bolas
+    const mouse = Mouse.create(this.render.canvas);
+    const mouseConstraint = MouseConstraint.create(this.engine, {
+      mouse: mouse,
+      constraint: {
+        stiffness: 0.2,
+        render: { visible: false }
+      }
+    });
+    Composite.add(this.engine.world, mouseConstraint);
+    this.render.mouse = mouse;
 
     // CAMERA LOGIC & MOTORS
     Events.on(this.engine, 'beforeUpdate', () => {
@@ -581,6 +653,33 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
         context.shadowBlur = 0;
         context.shadowOffsetY = 0;
+      });
+
+      // Draw Bumpers (Pinball)
+      this.bumpers.forEach(bumper => {
+        if (bumper.bounds.max.y < this.cameraY || bumper.bounds.min.y > this.cameraY + viewHeight) return;
+
+        const pos = bumper.position;
+        const r = 30; // same as physics radius
+
+        // Outer glow
+        context.beginPath();
+        context.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+        context.fillStyle = '#ff00ff';
+        context.shadowColor = '#ff00ff';
+        context.shadowBlur = 15;
+        context.fill();
+
+        // Inner circle
+        context.beginPath();
+        context.arc(pos.x, pos.y, r * 0.6, 0, Math.PI * 2);
+        context.fillStyle = '#fff';
+        context.shadowBlur = 0;
+        context.fill();
+        
+        context.lineWidth = 3;
+        context.strokeStyle = '#fff';
+        context.stroke();
       });
 
       // Draw Marbles
