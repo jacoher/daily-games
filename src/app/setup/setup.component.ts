@@ -47,11 +47,7 @@ import { ParticipantService } from '../participant.service';
           </div>
         </div>
 
-        <div class="config-section">
-          <h3>⚙️ Configuración</h3>
-          <label>Velocidad de Giro: {{ getSpeedLabel() }}</label>
-          <input type="range" min="0.5" max="2" step="0.1" [(ngModel)]="participantService.speedMultiplier" style="width: 100%;">
-        </div>
+
       </div>
       
       <div class="action-section">
@@ -111,8 +107,7 @@ import { ParticipantService } from '../participant.service';
     .input-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
     .participants-list { flex: 1; overflow-y: auto; margin-bottom: 1rem; padding-right: 0.5rem; }
     .empty-msg { text-align: center; opacity: 0.7; margin-top: 2rem; font-style: italic; }
-    .config-section { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; }
-    .config-section h3 { margin-bottom: 0.5rem; font-size: 1.2rem; }
+
     
     .action-section { width: 100%; text-align: center; }
     .play-btn {
@@ -153,11 +148,7 @@ export class SetupComponent implements OnInit {
     this.participantService.loadParticipants();
   }
 
-  getSpeedLabel() {
-    if (this.participantService.speedMultiplier < 0.8) return 'Rápida 🚀';
-    if (this.participantService.speedMultiplier > 1.2) return 'Lenta 🐢';
-    return 'Normal 🛸';
-  }
+
 
   addParticipant() {
     const name = this.newName.trim();
