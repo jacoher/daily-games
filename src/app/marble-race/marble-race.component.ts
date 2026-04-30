@@ -14,7 +14,7 @@ import Matter from 'matter-js';
     <div class="race-container">
       <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
       <div class="race-header">
-        <h2 class="race-title">🔴MARBLE RACE🔴</h2>
+        <h2 class="race-title">Marble Race</h2>
         <button class="glass-button start-btn" (click)="startRace()" *ngIf="!raceStarted">¡INICIAR CARRERA!</button>
       </div>
 
@@ -44,7 +44,7 @@ import Matter from 'matter-js';
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #0a0402; /* Will be covered by global space bg */
+      background: transparent;
       padding: 2rem 0;
       box-sizing: border-box;
     }
@@ -184,6 +184,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
   private spinners: Matter.Body[] = [];
   private rocks: Matter.Body[] = [];
   private animals: { body: Matter.Body, emoji: string, dir: number, speed: number }[] = [];
+  private bumpers: Matter.Body[] = [];
 
   private cameraY = 0;
 
@@ -351,6 +352,22 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         speed: 2 + Math.random() * 3
       });
       Composite.add(this.engine.world, animalBody);
+    }
+
+    // Add Pinball Bumpers (Rebotadores)
+    const numBumpers = 25;
+    for (let i = 0; i < numBumpers; i++) {
+      const bx = width * 0.1 + Math.random() * (width * 0.8);
+      const by = 800 + (i * (2800 / numBumpers)) + (Math.random() * 100);
+      
+      const bumper = Bodies.circle(bx, by, 30, {
+        isStatic: true,
+        restitution: 1.8, // High bounce like a pinball bumper
+        friction: 0,
+        render: { visible: false }
+      });
+      this.bumpers.push(bumper);
+      Composite.add(this.engine.world, bumper);
     }
 
     // Funnels at the bottom
@@ -581,6 +598,33 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
         context.shadowBlur = 0;
         context.shadowOffsetY = 0;
+      });
+
+      // Draw Bumpers (Pinball)
+      this.bumpers.forEach(bumper => {
+        if (bumper.bounds.max.y < this.cameraY || bumper.bounds.min.y > this.cameraY + viewHeight) return;
+
+        const pos = bumper.position;
+        const r = 30; // same as physics radius
+
+        // Outer glow
+        context.beginPath();
+        context.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+        context.fillStyle = '#ff00ff';
+        context.shadowColor = '#ff00ff';
+        context.shadowBlur = 15;
+        context.fill();
+
+        // Inner circle
+        context.beginPath();
+        context.arc(pos.x, pos.y, r * 0.6, 0, Math.PI * 2);
+        context.fillStyle = '#fff';
+        context.shadowBlur = 0;
+        context.fill();
+        
+        context.lineWidth = 3;
+        context.strokeStyle = '#fff';
+        context.stroke();
       });
 
       // Draw Marbles
