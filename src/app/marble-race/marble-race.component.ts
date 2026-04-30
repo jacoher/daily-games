@@ -363,8 +363,9 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       
       const bumper = Bodies.circle(bx, by, 30, {
         isStatic: true,
-        restitution: 1.8, // High bounce like a pinball bumper
+        restitution: 2.0, // High bounce like a pinball bumper
         friction: 0,
+        label: 'bumper',
         render: { visible: false }
       });
       this.bumpers.push(bumper);
@@ -448,6 +449,22 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
             }
           }
         }
+        else if (bodyA.label === 'bumper' || bodyB.label === 'bumper') {
+          const marbleBody = bodyA.label === 'bumper' ? bodyB : bodyA;
+          const bumperBody = bodyA.label === 'bumper' ? bodyA : bodyB;
+          
+          if (marbleBody.label && marbleBody.label.startsWith('marble-')) {
+            const dx = marbleBody.position.x - bumperBody.position.x;
+            const dy = marbleBody.position.y - bumperBody.position.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            
+            Matter.Body.applyForce(marbleBody, marbleBody.position, {
+              x: (dx / dist) * 0.06,
+              y: (dy / dist) * 0.06
+            });
+            this.soundService.playClack(10);
+          }
+        }
         else {
           const marbleObjA = this.marbleBodies.find(m => m.body.id === bodyA.id);
           const marbleObjB = this.marbleBodies.find(m => m.body.id === bodyB.id);
@@ -461,6 +478,31 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
           }
         }
       }
+    });
+
+    // Desatascar con click
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY + this.cameraY;
+
+      this.marbleBodies.forEach(m => {
+        if (m.finished) return;
+        const dx = m.body.position.x - clickX;
+        const dy = m.body.position.y - clickY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        // Si hacen click cerca de una bola o la bola está atascada
+        if (dist < 80) {
+          Matter.Body.applyForce(m.body, m.body.position, {
+            x: (Math.random() - 0.5) * 0.08,
+            y: -0.15 // Fuerte salto hacia arriba
+          });
+        }
+      });
     });
 
     // CAMERA LOGIC & MOTORS
