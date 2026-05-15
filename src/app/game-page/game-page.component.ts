@@ -15,11 +15,6 @@ import { Participant } from '../participant.model';
       <h1 class="main-title">🌌 Ruleta Cósmica 🌌</h1>
       <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
       
-      <div class="config-section glass-panel">
-        <label>Velocidad de Giro: {{ getSpeedLabel() }}</label>
-        <input type="range" min="0.5" max="2" step="0.1" [(ngModel)]="participantService.speedMultiplier" style="width: 100%;">
-      </div>
-      
       <div class="roulette-wrapper">
         <app-roulette 
           [items]="activeParticipants" 
@@ -28,13 +23,18 @@ import { Participant } from '../participant.model';
         </app-roulette>
       </div>
 
+      <div class="config-section glass-panel">
+        <label>Velocidad de Giro: {{ getSpeedLabel() }}</label>
+        <input type="range" min="0.5" max="2" step="0.1" [(ngModel)]="participantService.speedMultiplier" style="width: 100%;">
+      </div>
+
       <!-- Interactive Winner Modal -->
       <div class="winner-modal-backdrop" *ngIf="winner">
         <div class="winner-modal glass-panel">
           <h2 class="winner-title">🎉 ¡TENEMOS GANADOR! 🎉</h2>
           
           <div class="winner-profile">
-            <img [src]="winner.avatarUrl" class="winner-avatar" />
+            <img [src]="winner.avatarUrl" (error)="handleImageError($event, winner)" class="winner-avatar" />
             <div class="winner-name">{{ winner.name }}</div>
           </div>
           
@@ -98,9 +98,9 @@ import { Participant } from '../participant.model';
       z-index: 50;
     }
     .roulette-wrapper {
-      margin-top: 2rem;
+      margin-top: 1rem;
       width: 100%;
-      max-width: 630px;
+      max-width: 800px;
       padding: 0 1rem;
       box-sizing: border-box;
     }
@@ -254,5 +254,11 @@ export class GamePageComponent implements OnInit {
     }
     this.winner = null;
     this.showRocket = false;
+  }
+
+  handleImageError(event: any, participant: any) {
+    if (event && event.target && participant) {
+      event.target.src = 'https://api.dicebear.com/7.x/pixel-art/png?seed=' + encodeURIComponent(participant.name);
+    }
   }
 }

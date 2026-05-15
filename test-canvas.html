@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="c" width="200" height="200"></canvas>
+<script>
+  const ctx = document.getElementById('c').getContext('2d');
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0, 100, 100);
+    console.log("Drawn!");
+  };
+  img.src = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png";
+</script>
+</body>
+</html>

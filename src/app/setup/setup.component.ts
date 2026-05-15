@@ -40,7 +40,7 @@ import { ParticipantService } from '../participant.service';
           </div>
           <div class="participant-item glass-panel" *ngFor="let p of participantService.participants; let i = index" style="padding: 0.5rem 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <img [src]="p.avatarUrl" width="30" height="30" style="border-radius: 50%; background: white;">
+              <img [src]="p.avatarUrl" (error)="handleImageError($event, p)" width="30" height="30" style="border-radius: 50%; background: white;">
               <span>{{ p.name }}</span>
             </div>
             <button class="glass-button danger small" (click)="removeParticipant(i)">X</button>
@@ -152,11 +152,17 @@ export class SetupComponent implements OnInit {
 
   addParticipant() {
     const name = this.newName.trim();
-    const avatar = this.newAvatarUrl.trim() || 'https://api.dicebear.com/7.x/pixel-art/svg?seed=' + encodeURIComponent(name);
+    const avatar = this.newAvatarUrl.trim() || 'https://api.dicebear.com/7.x/pixel-art/png?seed=' + encodeURIComponent(name);
     if (name) {
       this.participantService.addParticipant(name, avatar);
       this.newName = '';
       this.newAvatarUrl = '';
+    }
+  }
+
+  handleImageError(event: any, p: any) {
+    if (event && event.target) {
+      event.target.src = 'https://api.dicebear.com/7.x/pixel-art/png?seed=' + encodeURIComponent(p.name);
     }
   }
 
