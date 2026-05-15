@@ -43,7 +43,7 @@ import { SoundService } from '../sound.service';
     .wheel-wrapper {
       position: relative;
       width: 100%;
-      max-width: 630px;
+      max-width: 800px;
       aspect-ratio: 1 / 1;
       border-radius: 50%;
       background: linear-gradient(145deg, #3a3a5a, #161625);
@@ -143,12 +143,19 @@ export class RouletteComponent implements OnChanges {
       if (!this.loadedImages.has(item.avatarUrl)) {
         return new Promise<void>((resolve) => {
           const img = new Image();
-          img.crossOrigin = 'anonymous';
           img.onload = () => {
             this.loadedImages.set(item.avatarUrl, img);
             resolve();
           };
-          img.onerror = () => resolve();
+          img.onerror = () => {
+            const fallback = new Image();
+            fallback.onload = () => {
+              this.loadedImages.set(item.avatarUrl, fallback);
+              resolve();
+            };
+            fallback.onerror = () => resolve();
+            fallback.src = 'https://api.dicebear.com/7.x/pixel-art/png?seed=' + encodeURIComponent(item.name);
+          };
           img.src = item.avatarUrl;
         });
       }
