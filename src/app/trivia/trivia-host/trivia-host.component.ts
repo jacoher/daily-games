@@ -61,10 +61,25 @@ import { ParticipantService } from '../../participant.service';
     <div class="lobby-left">
       <h2 class="room-label">SALA</h2>
       <div class="room-code">{{ triviaService.roomId }}</div>
+      <div class="qr-wrap" *ngIf="qrDataUrl" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; border-radius: 20px; max-width: 240px; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+        <div style="background: #fff; padding: 8px; border-radius: 12px; display: inline-block;">
+          <img [src]="qrDataUrl" class="qr-img" style="width: 160px; height: 160px; display: block;" alt="QR Code" />
+        </div>
+        
+        <div style="width: 100%; display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+          <p class="qr-url" style="color: rgba(255,255,255,0.6); font-size: 0.75rem; font-family: monospace; word-break: break-all; margin: 0; text-align: center;">{{ joinUrl }}</p>
+          
+          <button (click)="copyJoinUrl()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 8px; padding: 0.4rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>{{ copied ? '✅' : '📋' }}</span>
+            <span>{{ copied ? '¡Copiado!' : 'Copiar enlace' }}</span>
+          </button>
+        </div>
 
-      <div class="qr-wrap" *ngIf="qrDataUrl">
-        <img [src]="qrDataUrl" class="qr-img" alt="QR Code" />
-        <p class="qr-url">{{ joinUrl }}</p>
+        <div style="width: 100%; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start;">
+          <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">¿El QR no funciona?</span>
+          <span style="font-size: 0.65rem; color: rgba(255,255,255,0.35); line-height: 1.25;">Escribe la IP local de tu PC si usas móvil en red local:</span>
+          <input type="text" [(ngModel)]="customIp" (ngModelChange)="onIpChange()" placeholder="Ej: 192.168.1.15" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.35rem 0.5rem; color: #fff; font-family: monospace; font-size: 0.8rem; box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(168,85,247,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'" />
+        </div>
       </div>
       <div class="qr-wrap loading-qr" *ngIf="!qrDataUrl">
         <div class="spinner"></div>
@@ -510,6 +525,8 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   // Lobby
   qrDataUrl = '';
   joinUrl = '';
+  customIp = '';
+  copied = false;
 
   get participantCount() { return this.participantService.participants.length; }
   get answeredCount() { return Object.keys(this.currentAnswers).length; }
@@ -551,17 +568,36 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
     // Load questions first, then create room
     this.triviaService.loadQuestions(this.selectedCategory, this.questionCount);
     const roomId = await this.triviaService.createRoom(participants);
+    
+    // Detect and save local IP
+    const ip = await this.triviaService.getLocalIP();
+    this.customIp = ip;
+    
     await this.buildQR(roomId);
   }
 
   private async buildQR(roomId: string) {
-    const ip = await this.triviaService.getLocalIP();
     const port = window.location.port || '4200';
-    const url = `http://${ip}:${port}/trivia/play?room=${roomId}`;
+    const host = this.customIp || 'localhost';
+    const url = `http://${host}:${port}/trivia/play?room=${roomId}`;
     this.joinUrl = url;
     this.qrDataUrl = await QRCode.toDataURL(url, {
       width: 180, margin: 1,
       color: { dark: '#000000', light: '#ffffff' }
+    });
+  }
+
+  async onIpChange() {
+    if (this.triviaService.roomId) {
+      await this.buildQR(this.triviaService.roomId);
+    }
+  }
+
+  copyJoinUrl() {
+    navigator.clipboard.writeText(this.joinUrl).then(() => {
+      this.copied = true;
+      setTimeout(() => this.copied = false, 2000);
+      this.cdr.markForCheck();
     });
   }
 
