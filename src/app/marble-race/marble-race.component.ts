@@ -11,18 +11,21 @@ import Matter from 'matter-js';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="race-container">
-      <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
-      <div class="race-header">
-        <h2 class="race-title">Marble Race</h2>
-        <button class="glass-button start-btn" (click)="startRace()" *ngIf="!raceStarted">¡INICIAR CARRERA!</button>
-      </div>
+    <div class="race-container animate-in">
+      <header class="race-header">
+        <button class="glass-button ghost back-btn" (click)="goBack()">
+          <span>⬅️</span> <span class="btn-text">Volver</span>
+        </button>
+        <h1 class="race-title">Marble Race</h1>
+        <button class="glass-button start-btn" (click)="startRace()" *ngIf="!raceStarted">¡INICIAR!</button>
+        <div class="header-spacer" *ngIf="raceStarted"></div>
+      </header>
 
-      <div class="canvas-wrapper">
+      <div class="canvas-wrapper animate-scale">
         <canvas #raceCanvas></canvas>
         
         <!-- Podio y resultados -->
-        <div class="results-modal" *ngIf="raceFinished">
+        <div class="results-modal glass-panel" *ngIf="raceFinished">
           <h2>🏆 ¡Resultados Oficiales! 🏆</h2>
           <div class="ranking-list">
             <div class="ranking-item" *ngFor="let result of results; let i = index">
@@ -32,6 +35,15 @@ import Matter from 'matter-js';
               <span class="time">{{ result.time | number:'1.2-2' }}s</span>
             </div>
           </div>
+          
+          <div class="modal-actions">
+            <button class="glass-button start-btn restart-btn" (click)="restartRace()">
+              🔄 Reiniciar
+            </button>
+            <button class="glass-button ghost exit-btn" (click)="goBack()">
+              ⬅️ Salir
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -39,50 +51,104 @@ import Matter from 'matter-js';
   styles: [`
     .race-container {
       position: relative;
-      width: 100vw;
-      min-height: 100vh;
+      width: 100%;
+      max-width: 100%;
+      min-height: calc(100dvh - 2rem);
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: transparent;
-      padding: 2rem 0;
+      justify-content: flex-start;
+      padding: 0 1rem var(--safe-bottom) 1rem;
       box-sizing: border-box;
-    }
-    .back-btn {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 50;
     }
     .race-header {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      margin-bottom: 1rem;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 800px;
+      padding: clamp(0.5rem, 2vw, 1.2rem) 0;
+      gap: 15px;
+      box-sizing: border-box;
       z-index: 10;
     }
     .race-title {
-      font-size: 2.5rem;
-      color: #ff8c42;
-      text-shadow: 0 0 15px rgba(255, 140, 66, 0.8);
-      margin-bottom: 1rem;
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 900;
+      margin: 0;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(255, 140, 66, 0.6);
+      background: linear-gradient(to right, #ff8c42, #ff4b2b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      flex-grow: 1;
+    }
+    .back-btn {
+      flex-shrink: 0;
+      font-size: 0.95rem;
+      padding: 0.6rem 1.2rem;
     }
     .start-btn {
-      font-size: 1.2rem;
-      padding: 0.8rem 2rem;
+      flex-shrink: 0;
+      font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+      padding: clamp(0.6rem, 2vw, 0.8rem) clamp(1.2rem, 3vw, 2rem);
       background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      box-shadow: 0 5px 15px rgba(255, 75, 43, 0.4);
+      border-radius: 20px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
+    .header-spacer {
+      width: 105px;
+      flex-shrink: 0;
+    }
+    
+    @media (max-width: 600px) {
+      .race-header {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 0.5rem;
+      }
+      .header-spacer {
+        display: none;
+      }
+      .back-btn {
+        width: 100%;
+        max-width: 150px;
+        order: 3;
+      }
+      .race-title {
+        order: 1;
+        font-size: clamp(1.6rem, 6vw, 2.2rem);
+      }
+      .start-btn {
+        width: 100%;
+        max-width: 220px;
+        order: 2;
+      }
+      .btn-text {
+        display: inline;
+      }
+    }
+    
     .canvas-wrapper {
       position: relative;
       width: 100%;
       max-width: 800px;
-      height: 75vh;
-      border: 6px solid #8b3a20;
-      border-radius: 20px;
+      height: min(85vh, 85dvh, 700px);
+      border: 4px solid #8b3a20;
+      border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.9);
-      background: rgba(0,0,0,0.1);
-      backdrop-filter: blur(8px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8),
+                  inset 0 0 40px rgba(0,0,0,0.95);
+      background: rgba(0,0,0,0.2);
+      backdrop-filter: blur(12px);
+      box-sizing: border-box;
+      margin: 0 auto;
     }
     canvas {
       position: relative;
@@ -96,66 +162,117 @@ import Matter from 'matter-js';
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(20, 5, 2, 0.95);
-      padding: 2rem;
-      border-radius: 15px;
-      border: 2px solid #ffb347;
-      box-shadow: 0 0 40px rgba(255, 179, 71, 0.5);
+      background: rgba(15, 10, 25, 0.85);
+      padding: clamp(1.5rem, 5vw, 2.5rem) clamp(1rem, 4vw, 2rem);
+      border-radius: 24px;
+      border: 2px solid rgba(255, 140, 66, 0.5);
+      box-shadow: 0 20px 60px rgba(255, 140, 66, 0.3),
+                  inset 0 0 25px rgba(255, 140, 66, 0.1);
       z-index: 100;
       width: 90%;
-      max-width: 400px;
-      backdrop-filter: blur(10px);
-      animation: popIn 0.5s ease-out;
+      max-width: 420px;
+      backdrop-filter: blur(15px);
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-sizing: border-box;
     }
     .results-modal h2 {
       text-align: center;
       color: #ffb347;
       margin-bottom: 1.5rem;
+      font-size: clamp(1.4rem, 4vw, 1.8rem);
+      font-weight: 900;
+      text-shadow: 0 0 10px rgba(255, 179, 71, 0.6);
     }
     .ranking-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-height: 50vh;
+      gap: 8px;
+      max-height: 25vh;
       overflow-y: auto;
+      padding-right: 4px;
     }
+    .ranking-list::-webkit-scrollbar { width: 5px; }
+    .ranking-list::-webkit-scrollbar-track { background: transparent; }
+    .ranking-list::-webkit-scrollbar-thumb { background: rgba(255, 140, 66, 0.4); border-radius: 3px; }
+    .ranking-list::-webkit-scrollbar-thumb:hover { background: rgba(255, 140, 66, 0.7); }
+    
     .ranking-item {
       display: flex;
       align-items: center;
-      gap: 15px;
-      padding: 10px;
+      gap: 12px;
+      padding: 8px 12px;
       background: rgba(255, 255, 255, 0.05);
-      border-radius: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .position {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #aaa;
-      width: 40px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #cbd5e1;
+      width: 32px;
       text-align: center;
     }
-    .position.first { color: #ffd700; font-size: 2rem; }
-    .position.second { color: #c0c0c0; font-size: 1.8rem; }
-    .position.third { color: #cd7f32; font-size: 1.6rem; }
+    .position.first { color: #ffd700; font-size: 1.5rem; }
+    .position.second { color: #c0c0c0; font-size: 1.35rem; }
+    .position.third { color: #cd7f32; font-size: 1.2rem; }
     
     .marble-color {
-      width: 24px;
-      height: 24px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5);
+      box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.2);
     }
     .name {
       flex: 1;
-      font-size: 1.2rem;
+      font-size: 1.05rem;
       color: #fff;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .time {
-      font-size: 1rem;
-      color: #ffb347;
+      font-size: 0.95rem;
+      color: #ff8c42;
       font-family: monospace;
+      font-weight: 700;
     }
+    .modal-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.85rem;
+      justify-content: center;
+      width: 100%;
+    }
+    .restart-btn {
+      flex: 1.2;
+      font-size: 0.95rem;
+      padding: 0.8rem 0;
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+    .restart-btn:hover {
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.5);
+    }
+    .exit-btn {
+      flex: 0.8;
+      font-size: 0.95rem;
+      padding: 0.8rem 0;
+      box-shadow: none;
+    }
+    
+    @media (max-width: 400px) {
+      .modal-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .restart-btn, .exit-btn {
+        width: 100%;
+      }
+    }
+    
     @keyframes popIn {
-      0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+      0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
       100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
     }
   `]
@@ -226,8 +343,8 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     const width = canvas.parentElement?.clientWidth || 800;
     const viewHeight = canvas.parentElement?.clientHeight || 600;
 
-    // Massive track length
-    const trackHeight = 4000;
+    // Massive track length (increased further for an epic descent)
+    const trackHeight = 5600;
 
     const Engine = Matter.Engine,
       Render = Matter.Render,
@@ -312,8 +429,8 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     const propellerPositions: {x: number, y: number}[] = [];
     for (let i = 0; i < numPropellers; i++) {
       const px = width * (0.2 + (Math.random() * 0.6));
-      // Spread them from y=400 down to y=3600
-      const py = 400 + (i * (3200 / numPropellers)) + (Math.random() * 100 - 50);
+      // Spread them from y=400 down to y=5200 (adjusted for 5600px trackHeight)
+      const py = 400 + (i * (4800 / numPropellers)) + (Math.random() * 100 - 50);
       propellerPositions.push({x: px, y: py});
 
       const spinner = Bodies.rectangle(px, py, 150 + Math.random() * 50, 20, {
@@ -340,7 +457,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     const numAnimals = 10;
     for (let i = 0; i < numAnimals; i++) {
       const startX = width * 0.5;
-      const startY = 500 + (i * (3000 / numAnimals));
+      const startY = 500 + (i * (4600 / numAnimals)); // Adjusted for 5600px trackHeight
 
       const animalBody = Bodies.circle(startX, startY, 25, {
         isStatic: false,
@@ -471,6 +588,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
             if (this.results.length === this.participants.length) {
               this.raceFinished = true;
+              this.soundService.stopAmbientMusic();
             }
           }
         }
@@ -741,5 +859,35 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     this.startTime = Date.now();
     const bodies = this.marbleBodies.map(m => m.body);
     Matter.Composite.add(this.engine.world, bodies);
+    this.soundService.startAmbientMusic();
+  }
+
+  restartRace() {
+    this.raceStarted = false;
+    this.raceFinished = false;
+    this.results = [];
+    this.cameraY = 0;
+
+    // Clear Matter engines
+    if (this.runner) {
+      Matter.Runner.stop(this.runner);
+    }
+    if (this.render) {
+      Matter.Render.stop(this.render);
+      this.render.canvas.remove();
+    }
+    if (this.engine) {
+      Matter.Engine.clear(this.engine);
+    }
+
+    // Reset arrays
+    this.marbleBodies = [];
+    this.spinners = [];
+    this.rocks = [];
+    this.animals = [];
+    this.bumpers = [];
+
+    // Re-initialize physics
+    this.initPhysics();
   }
 }

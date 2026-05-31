@@ -23,7 +23,7 @@ import { RouterOutlet } from '@angular/router';
     .app-container {
       position: relative;
       z-index: 10;
-      width: 100vw;
+      width: 100%;
       max-width: 1200px;
       margin: 0 auto;
       padding: 2rem;

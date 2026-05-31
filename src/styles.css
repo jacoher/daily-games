@@ -1,106 +1,225 @@
-/* You can add global styles to this file, and also import other style files */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+/* ═══════════════════════════════════════════════════════════════
+   DAILY GAMES — Global Design System
+   ═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
+/* ── Design Tokens ── */
 :root {
-  --primary-color: #8b5cf6;
-  --secondary-color: #3b82f6;
-  --bg-dark: rgba(10, 10, 26, 0.85);
-  --glass-bg: rgba(255, 255, 255, 0.08);
-  --glass-border: rgba(255, 255, 255, 0.15);
-  --text-main: #f8fafc;
+  --purple:    #a855f7;
+  --purple-d:  #7c3aed;
+  --cyan:      #06b6d4;
+  --pink:      #ec4899;
+  --green:     #22c55e;
+  --red:       #f43f5e;
+  --amber:     #fbbf24;
+
+  --bg:        #09090f;
+  --surface:   rgba(255,255,255,0.04);
+  --surface-h: rgba(255,255,255,0.08);
+  --border:    rgba(255,255,255,0.1);
+  --border-h:  rgba(255,255,255,0.2);
+
+  --text:      #f1f5f9;
+  --text-muted:#94a3b8;
+
+  --radius-sm: 10px;
+  --radius:    16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow:    0 8px 32px rgba(0,0,0,0.5);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.6);
+
+  --blur:      blur(20px);
+
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Safe area for notched phones */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
 }
 
-* {
+/* ── Reset ── */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
   background-image: url('/space-bg.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   background-repeat: no-repeat;
-  color: var(--text-main);
-  min-height: 100vh;
-  margin: 0;
+  color: var(--text);
+  min-height: 100dvh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  max-width: 100vw;
 }
 
-/* Glassmorphism utilities */
+/* Fix images and media inside containers */
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Typography scale ── */
+h1, h2, h3, h4 { line-height: 1.2; font-weight: 700; }
+p { line-height: 1.6; }
+button, input, select, textarea { font-family: inherit; }
+
+/* ── Glass utilities ── */
 .glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  padding: 2rem;
+  background: var(--surface);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
 }
 
 .glass-input {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid var(--border);
+  color: var(--text);
   padding: 0.75rem 1rem;
-  border-radius: 12px;
+  border-radius: var(--radius);
   outline: none;
-  font-family: 'Outfit', sans-serif;
-  transition: all 0.3s ease;
+  font-size: 1rem;
   width: 100%;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  -webkit-appearance: none;
 }
-
 .glass-input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(168,85,247,0.15);
 }
+.glass-input::placeholder { color: var(--text-muted); }
 
+/* ── Button system ── */
 .glass-button {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--purple), var(--cyan));
   border: none;
-  color: white;
+  color: #fff;
   padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
-  font-family: 'Outfit', sans-serif;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+  box-shadow: 0 4px 15px rgba(168,85,247,0.35);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
-
-.glass-button:hover {
+.glass-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+  box-shadow: 0 8px 25px rgba(168,85,247,0.5);
 }
-
-.glass-button:active {
-  transform: translateY(1px);
+.glass-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(168,85,247,0.3);
+}
+.glass-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .glass-button.danger {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, #f43f5e, #b91c1c);
+  box-shadow: 0 4px 15px rgba(244,63,94,0.35);
 }
-.glass-button.danger:hover {
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+.glass-button.danger:hover:not(:disabled) {
+  box-shadow: 0 8px 25px rgba(244,63,94,0.5);
 }
 
 .glass-button.small {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
-  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
 }
 
-/* Scrollbar customization */
-::-webkit-scrollbar {
-  width: 8px;
+.glass-button.ghost {
+  background: var(--surface-h);
+  border: 1px solid var(--border-h);
+  box-shadow: none;
 }
-::-webkit-scrollbar-track {
-  background: rgba(0,0,0,0.2);
+.glass-button.ghost:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  box-shadow: none;
 }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--primary-color);
+  background: rgba(168,85,247,0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(168,85,247,0.7); }
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-in { animation: fadeIn 0.35s var(--transition) both; }
+.animate-scale { animation: fadeInScale 0.3s var(--transition) both; }
+
+/* ── Focus visible (accessibility) ── */
+:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ── Selection ── */
+::selection {
+  background: rgba(168,85,247,0.3);
+  color: #fff;
+}
+
+/* ── Responsive breakpoints helper ── */
+/* xs: <480px | sm: 480-768px | md: 768-1024px | lg: >1024px */
