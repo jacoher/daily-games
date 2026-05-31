@@ -577,9 +577,17 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   }
 
   private async buildQR(roomId: string) {
-    const port = window.location.port || '4200';
-    const host = this.customIp || 'localhost';
-    const url = `http://${host}:${port}/trivia/play?room=${roomId}`;
+    let url = '';
+    const hostname = window.location.hostname;
+
+    if (hostname.includes('github.io') || hostname.includes('jacoher.github.io')) {
+      url = `https://jacoher.github.io/daily-games/trivia/play?room=${roomId}`;
+    } else {
+      const port = window.location.port || '4200';
+      const host = this.customIp || hostname || 'localhost';
+      url = `http://${host}:${port}/trivia/play?room=${roomId}`;
+    }
+
     this.joinUrl = url;
     this.qrDataUrl = await QRCode.toDataURL(url, {
       width: 180, margin: 1,
