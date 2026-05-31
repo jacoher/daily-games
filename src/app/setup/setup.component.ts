@@ -9,133 +9,189 @@ import { ParticipantService } from '../participant.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="setup-container">
-      <h1 class="main-title">🌌 Daily Games <span class="version">v1.0</span> 🌌</h1>
-      <div class="sidebar glass-panel">
-        <h2>Participantes</h2>
-        
-        <div class="input-group" style="flex-direction: column;">
-          <input 
-            type="text" 
-            class="glass-input" 
-            [(ngModel)]="newName" 
-            placeholder="Añadir nombre..." 
-          />
-          <div style="display: flex; gap: 0.5rem; width: 100%;">
-            <input 
-              type="text" 
-              class="glass-input" 
-              [(ngModel)]="newAvatarUrl" 
-              (keyup.enter)="addParticipant()"
-              placeholder="URL avatar (opcional)..." 
-              style="flex: 1;"
-            />
-            <button class="glass-button" (click)="addParticipant()">+</button>
-          </div>
-        </div>
-
-        <div class="participants-list">
-          <div *ngIf="participantService.participants.length === 0" class="empty-msg">
-            No hay participantes. ¡Agrega algunos!
-          </div>
-          <div class="participant-item glass-panel" *ngFor="let p of participantService.participants; let i = index" style="padding: 0.5rem 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <img [src]="p.avatarUrl" (error)="handleImageError($event, p)" width="30" height="30" style="border-radius: 50%; background: white;">
-              <span>{{ p.name }}</span>
-            </div>
-            <button class="glass-button danger small" (click)="removeParticipant(i)">X</button>
-          </div>
-        </div>
-
-
+    <div class="setup-container animate-in">
+      <div class="title-wrap">
+        <h1 class="main-title">
+          <span class="emoji-spin">🌌</span> 
+          Daily Games 
+          <span class="version">v1.0</span>
+        </h1>
+        <p class="subtitle">Agrega jugadores y elige un minijuego</p>
       </div>
       
-      <div class="action-section">
-         <button class="glass-button play-btn" (click)="goToRoulette()" [disabled]="participantService.participants.length === 0">
-           🚀 ¡IR A LA RULETA!
-         </button>
-         <button class="glass-button play-btn marble-btn" (click)="goToMarbles()" [disabled]="participantService.participants.length === 0">
-           🏁 ¡IR A MARBLE RACE!
-         </button>
-         <p class="hint" *ngIf="participantService.participants.length === 0">Agrega al menos un participante para comenzar</p>
+      <div class="content-grid">
+        <!-- ════════ PARTICIPANTS PANEL ════════ -->
+        <div class="sidebar glass-panel">
+          <div class="panel-header">
+            <h2>👥 Participantes</h2>
+            <span class="count-badge">{{ participantService.participants.length }}</span>
+          </div>
+          
+          <div class="input-group">
+            <input 
+              type="text" 
+              class="glass-input big-input" 
+              [(ngModel)]="newName" 
+              (keyup.enter)="addParticipant()"
+              placeholder="Escribe un nombre..." 
+            />
+            <div class="sub-input-row">
+              <input 
+                type="text" 
+                class="glass-input sm-input" 
+                [(ngModel)]="newAvatarUrl" 
+                (keyup.enter)="addParticipant()"
+                placeholder="URL de avatar (opcional)" 
+              />
+              <button class="glass-button add-btn" (click)="addParticipant()" [disabled]="!newName.trim()">
+                Añadir
+              </button>
+            </div>
+          </div>
+
+          <div class="participants-list">
+            <div *ngIf="participantService.participants.length === 0" class="empty-msg">
+              <span class="empty-icon">👻</span>
+              <p>Sala vacía. ¡Agrega al primer jugador!</p>
+            </div>
+            
+            <div class="participant-item" *ngFor="let p of participantService.participants; let i = index">
+              <div class="p-info">
+                <img [src]="p.avatarUrl" class="p-avatar" (error)="handleImageError($event, p)">
+                <span class="p-name">{{ p.name }}</span>
+              </div>
+              <button class="glass-button danger ghost p-remove" (click)="removeParticipant(i)" title="Eliminar">
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- ════════ GAMES PANEL ════════ -->
+        <div class="action-section">
+           <button class="game-card roulette-card" (click)="goToRoulette()" [class.disabled-card]="participantService.participants.length === 0">
+             <div class="card-icon">🚀</div>
+             <div class="card-content">
+               <h3>La Ruleta</h3>
+               <p>Sorteos y castigos al azar</p>
+             </div>
+           </button>
+
+           <button class="game-card marble-card" (click)="goToMarbles()" [class.disabled-card]="participantService.participants.length === 0">
+             <div class="card-icon">🏁</div>
+             <div class="card-content">
+               <h3>Marble Race</h3>
+               <p>Carrera de canicas épica</p>
+             </div>
+           </button>
+
+           <button class="game-card trivia-card" (click)="goToTrivia()" [class.disabled-card]="participantService.participants.length === 0">
+             <div class="card-icon">🧠</div>
+             <div class="card-content">
+               <h3>Trivia IA</h3>
+               <p>Demuestra tu conocimiento</p>
+             </div>
+           </button>
+           
+           <div class="hint-box" *ngIf="participantService.participants.length === 0">
+              ⚠️ Agrega jugadores para desbloquear los juegos
+           </div>
+        </div>
       </div>
     </div>
   `,
   styles: [`
-    .main-title {
-      font-size: clamp(2rem, 8vw, 3.5rem);
-      font-weight: 800;
-      margin-bottom: 2rem;
-      text-align: center;
-      text-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
-      background: linear-gradient(to right, #a855f7, #3b82f6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 15px;
-    }
-    .version {
-      font-size: 1.2rem;
-      background: rgba(251, 191, 36, 0.15);
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      color: #fbbf24;
-      border: 1px solid rgba(251, 191, 36, 0.5);
-      -webkit-text-fill-color: #fbbf24;
-      text-shadow: none;
-      letter-spacing: 1px;
-    }
     .setup-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2rem;
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
+      display: flex; flex-direction: column; align-items: center; gap: 2rem;
+      width: 100%; max-width: 1000px; margin: 0 auto;
     }
-    .sidebar {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      height: 60vh;
-    }
-    .sidebar h2 { margin-bottom: 1rem; font-size: 1.8rem; }
-    .input-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .participants-list { flex: 1; overflow-y: auto; margin-bottom: 1rem; padding-right: 0.5rem; }
-    .empty-msg { text-align: center; opacity: 0.7; margin-top: 2rem; font-style: italic; }
 
+    .title-wrap { text-align: center; margin-bottom: 1rem; }
+    .main-title {
+      font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 900;
+      background: linear-gradient(to right, #a855f7, #06b6d4, #a855f7);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: shimmer 5s linear infinite;
+      display: flex; align-items: center; justify-content: center; gap: 1rem;
+    }
+    .emoji-spin { display: inline-block; -webkit-text-fill-color: initial; animation: spin 20s linear infinite; }
+    .subtitle { color: rgba(255,255,255,0.7); font-size: 1.1rem; margin-top: 0.5rem; letter-spacing: 1px; }
     
-    .action-section { width: 100%; text-align: center; }
-    .play-btn {
-      font-size: 1.5rem;
-      padding: 1rem 3rem;
-      border-radius: 40px;
-      background: linear-gradient(135deg, #a855f7, #3b82f6);
-      color: white;
-      font-weight: 800;
-      letter-spacing: 2px;
-      width: 100%;
-      transition: transform 0.2s, box-shadow 0.2s;
-      border: none;
-      cursor: pointer;
+    .version {
+      font-size: 1rem; background: rgba(168,85,247,0.15);
+      padding: 0.3rem 0.8rem; border-radius: 20px; border: 1px solid rgba(168,85,247,0.4);
+      -webkit-text-fill-color: #c084fc; letter-spacing: 1px; vertical-align: middle;
     }
-    .play-btn:hover:not(:disabled) {
-      transform: scale(1.05);
-      box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+
+    .content-grid {
+      display: grid; grid-template-columns: 1fr; gap: 2rem; width: 100%;
     }
-    .marble-btn {
-      margin-top: 15px;
-      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    @media (min-width: 800px) {
+      .content-grid { grid-template-columns: 1.2fr 1fr; align-items: start; }
     }
-    .marble-btn:hover:not(:disabled) {
-      box-shadow: 0 0 30px rgba(255, 75, 43, 0.6);
+
+    /* Sidebar / Participants */
+    .sidebar { display: flex; flex-direction: column; height: 600px; max-height: 70vh; padding: 2rem; }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .panel-header h2 { font-size: 1.5rem; font-weight: 800; }
+    .count-badge { background: #a855f7; color: #fff; padding: 0.2rem 0.8rem; border-radius: 20px; font-weight: 800; font-size: 1rem; }
+
+    .input-group { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .big-input { font-size: 1.1rem; padding: 1rem; border-radius: 16px; background: rgba(0,0,0,0.2); }
+    .sub-input-row { display: flex; gap: 0.5rem; }
+    .sm-input { flex: 1; font-size: 0.9rem; }
+    .add-btn { border-radius: 12px; padding: 0 1.5rem; }
+
+    .participants-list { flex: 1; overflow-y: auto; padding-right: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .empty-msg { text-align: center; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; gap: 0.5rem; margin-top: 3rem; }
+    .empty-icon { font-size: 3rem; animation: bounce 2s infinite; }
+    
+    .participant-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.05); padding: 0.6rem 1rem; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s;
     }
-    .play-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #555; }
-    .hint { margin-top: 1rem; opacity: 0.8; }
+    .participant-item:hover { background: rgba(255,255,255,0.1); transform: translateX(5px); border-color: rgba(168,85,247,0.3); }
+    .p-info { display: flex; align-items: center; gap: 12px; }
+    .p-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); background: #fff; }
+    .p-name { font-weight: 600; font-size: 1.05rem; }
+    .p-remove { padding: 0.4rem; font-size: 1.1rem; border-radius: 10px; background: transparent; }
+    .p-remove:hover { background: rgba(244,63,94,0.2); transform: scale(1.1); }
+
+    /* Action Section / Games */
+    .action-section { display: flex; flex-direction: column; gap: 1rem; }
+    
+    .game-card {
+      display: flex; align-items: center; gap: 1.5rem; text-align: left;
+      padding: 1.5rem; border-radius: 24px; border: none; cursor: pointer;
+      color: #fff; text-decoration: none; font-family: 'Outfit', sans-serif;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative; overflow: hidden;
+    }
+    .game-card::before {
+      content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(255,255,255,0.2), transparent); opacity: 0; transition: opacity 0.3s;
+    }
+    .game-card:hover:not(.disabled-card) { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
+    .game-card:hover:not(.disabled-card)::before { opacity: 1; }
+    .game-card:active:not(.disabled-card) { transform: translateY(0); }
+    
+    .disabled-card { opacity: 0.4; cursor: not-allowed; filter: grayscale(100%); }
+
+    .roulette-card { background: linear-gradient(135deg, #3b82f6, #8b5cf6); box-shadow: 0 8px 25px rgba(59,130,246,0.3); }
+    .marble-card { background: linear-gradient(135deg, #f43f5e, #f97316); box-shadow: 0 8px 25px rgba(244,63,94,0.3); }
+    .trivia-card { background: linear-gradient(135deg, #06b6d4, #a855f7); box-shadow: 0 8px 25px rgba(6,182,212,0.3); }
+
+    .card-icon { font-size: 3rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+    .card-content h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .card-content p { font-size: 0.95rem; color: rgba(255,255,255,0.9); font-weight: 500; }
+
+    .hint-box {
+      background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.4);
+      color: #fbbf24; padding: 1rem; border-radius: 16px; text-align: center;
+      font-weight: 600; font-size: 0.95rem; margin-top: 0.5rem;
+      animation: pulse 2s infinite alternate;
+    }
   `]
 })
 export class SetupComponent implements OnInit {
@@ -179,6 +235,12 @@ export class SetupComponent implements OnInit {
   goToMarbles() {
     if (this.participantService.participants.length > 0) {
       this.router.navigate(['/marbles']);
+    }
+  }
+
+  goToTrivia() {
+    if (this.participantService.participants.length > 0) {
+      this.router.navigate(['/trivia']);
     }
   }
 }

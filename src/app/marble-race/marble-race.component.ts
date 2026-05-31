@@ -11,18 +11,21 @@ import Matter from 'matter-js';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="race-container">
-      <button class="glass-button back-btn" (click)="goBack()">⬅️ Volver</button>
-      <div class="race-header">
-        <h2 class="race-title">Marble Race</h2>
-        <button class="glass-button start-btn" (click)="startRace()" *ngIf="!raceStarted">¡INICIAR CARRERA!</button>
-      </div>
+    <div class="race-container animate-in">
+      <header class="race-header">
+        <button class="glass-button ghost back-btn" (click)="goBack()">
+          <span>⬅️</span> <span class="btn-text">Volver</span>
+        </button>
+        <h1 class="race-title">Marble Race</h1>
+        <button class="glass-button start-btn" (click)="startRace()" *ngIf="!raceStarted">¡INICIAR!</button>
+        <div class="header-spacer" *ngIf="raceStarted"></div>
+      </header>
 
-      <div class="canvas-wrapper">
+      <div class="canvas-wrapper animate-scale">
         <canvas #raceCanvas></canvas>
         
         <!-- Podio y resultados -->
-        <div class="results-modal" *ngIf="raceFinished">
+        <div class="results-modal glass-panel" *ngIf="raceFinished">
           <h2>🏆 ¡Resultados Oficiales! 🏆</h2>
           <div class="ranking-list">
             <div class="ranking-item" *ngFor="let result of results; let i = index">
@@ -32,6 +35,15 @@ import Matter from 'matter-js';
               <span class="time">{{ result.time | number:'1.2-2' }}s</span>
             </div>
           </div>
+          
+          <div class="modal-actions">
+            <button class="glass-button start-btn restart-btn" (click)="restartRace()">
+              🔄 Reiniciar
+            </button>
+            <button class="glass-button ghost exit-btn" (click)="goBack()">
+              ⬅️ Salir
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -39,50 +51,104 @@ import Matter from 'matter-js';
   styles: [`
     .race-container {
       position: relative;
-      width: 100vw;
-      min-height: 100vh;
+      width: 100%;
+      max-width: 100%;
+      min-height: calc(100dvh - 2rem);
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: transparent;
-      padding: 2rem 0;
+      justify-content: flex-start;
+      padding: 0 1rem var(--safe-bottom) 1rem;
       box-sizing: border-box;
-    }
-    .back-btn {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 50;
     }
     .race-header {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      margin-bottom: 1rem;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 800px;
+      padding: clamp(0.5rem, 2vw, 1.2rem) 0;
+      gap: 15px;
+      box-sizing: border-box;
       z-index: 10;
     }
     .race-title {
-      font-size: 2.5rem;
-      color: #ff8c42;
-      text-shadow: 0 0 15px rgba(255, 140, 66, 0.8);
-      margin-bottom: 1rem;
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 900;
+      margin: 0;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(255, 140, 66, 0.6);
+      background: linear-gradient(to right, #ff8c42, #ff4b2b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      flex-grow: 1;
+    }
+    .back-btn {
+      flex-shrink: 0;
+      font-size: 0.95rem;
+      padding: 0.6rem 1.2rem;
     }
     .start-btn {
-      font-size: 1.2rem;
-      padding: 0.8rem 2rem;
+      flex-shrink: 0;
+      font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+      padding: clamp(0.6rem, 2vw, 0.8rem) clamp(1.2rem, 3vw, 2rem);
       background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      box-shadow: 0 5px 15px rgba(255, 75, 43, 0.4);
+      border-radius: 20px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
+    .header-spacer {
+      width: 105px;
+      flex-shrink: 0;
+    }
+    
+    @media (max-width: 600px) {
+      .race-header {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 0.5rem;
+      }
+      .header-spacer {
+        display: none;
+      }
+      .back-btn {
+        width: 100%;
+        max-width: 150px;
+        order: 3;
+      }
+      .race-title {
+        order: 1;
+        font-size: clamp(1.6rem, 6vw, 2.2rem);
+      }
+      .start-btn {
+        width: 100%;
+        max-width: 220px;
+        order: 2;
+      }
+      .btn-text {
+        display: inline;
+      }
+    }
+    
     .canvas-wrapper {
       position: relative;
       width: 100%;
       max-width: 800px;
-      height: 75vh;
-      border: 6px solid #8b3a20;
-      border-radius: 20px;
+      height: min(85vh, 85dvh, 700px);
+      border: 4px solid #8b3a20;
+      border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.9);
-      background: rgba(0,0,0,0.1);
-      backdrop-filter: blur(8px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8),
+                  inset 0 0 40px rgba(0,0,0,0.95);
+      background: rgba(0,0,0,0.2);
+      backdrop-filter: blur(12px);
+      box-sizing: border-box;
+      margin: 0 auto;
     }
     canvas {
       position: relative;
@@ -96,66 +162,117 @@ import Matter from 'matter-js';
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(20, 5, 2, 0.95);
-      padding: 2rem;
-      border-radius: 15px;
-      border: 2px solid #ffb347;
-      box-shadow: 0 0 40px rgba(255, 179, 71, 0.5);
+      background: rgba(15, 10, 25, 0.85);
+      padding: clamp(1.5rem, 5vw, 2.5rem) clamp(1rem, 4vw, 2rem);
+      border-radius: 24px;
+      border: 2px solid rgba(255, 140, 66, 0.5);
+      box-shadow: 0 20px 60px rgba(255, 140, 66, 0.3),
+                  inset 0 0 25px rgba(255, 140, 66, 0.1);
       z-index: 100;
       width: 90%;
-      max-width: 400px;
-      backdrop-filter: blur(10px);
-      animation: popIn 0.5s ease-out;
+      max-width: 420px;
+      backdrop-filter: blur(15px);
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-sizing: border-box;
     }
     .results-modal h2 {
       text-align: center;
       color: #ffb347;
       margin-bottom: 1.5rem;
+      font-size: clamp(1.4rem, 4vw, 1.8rem);
+      font-weight: 900;
+      text-shadow: 0 0 10px rgba(255, 179, 71, 0.6);
     }
     .ranking-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-height: 50vh;
+      gap: 8px;
+      max-height: 25vh;
       overflow-y: auto;
+      padding-right: 4px;
     }
+    .ranking-list::-webkit-scrollbar { width: 5px; }
+    .ranking-list::-webkit-scrollbar-track { background: transparent; }
+    .ranking-list::-webkit-scrollbar-thumb { background: rgba(255, 140, 66, 0.4); border-radius: 3px; }
+    .ranking-list::-webkit-scrollbar-thumb:hover { background: rgba(255, 140, 66, 0.7); }
+    
     .ranking-item {
       display: flex;
       align-items: center;
-      gap: 15px;
-      padding: 10px;
+      gap: 12px;
+      padding: 8px 12px;
       background: rgba(255, 255, 255, 0.05);
-      border-radius: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .position {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #aaa;
-      width: 40px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #cbd5e1;
+      width: 32px;
       text-align: center;
     }
-    .position.first { color: #ffd700; font-size: 2rem; }
-    .position.second { color: #c0c0c0; font-size: 1.8rem; }
-    .position.third { color: #cd7f32; font-size: 1.6rem; }
+    .position.first { color: #ffd700; font-size: 1.5rem; }
+    .position.second { color: #c0c0c0; font-size: 1.35rem; }
+    .position.third { color: #cd7f32; font-size: 1.2rem; }
     
     .marble-color {
-      width: 24px;
-      height: 24px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5);
+      box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.2);
     }
     .name {
       flex: 1;
-      font-size: 1.2rem;
+      font-size: 1.05rem;
       color: #fff;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .time {
-      font-size: 1rem;
-      color: #ffb347;
+      font-size: 0.95rem;
+      color: #ff8c42;
       font-family: monospace;
+      font-weight: 700;
     }
+    .modal-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.85rem;
+      justify-content: center;
+      width: 100%;
+    }
+    .restart-btn {
+      flex: 1.2;
+      font-size: 0.95rem;
+      padding: 0.8rem 0;
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+    .restart-btn:hover {
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.5);
+    }
+    .exit-btn {
+      flex: 0.8;
+      font-size: 0.95rem;
+      padding: 0.8rem 0;
+      box-shadow: none;
+    }
+    
+    @media (max-width: 400px) {
+      .modal-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .restart-btn, .exit-btn {
+        width: 100%;
+      }
+    }
+    
     @keyframes popIn {
-      0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+      0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
       100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
     }
   `]
@@ -185,8 +302,9 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
   private spinners: Matter.Body[] = [];
   private rocks: Matter.Body[] = [];
   private animals: { body: Matter.Body, emoji: string, dir: number, speed: number }[] = [];
+  private boosters: Matter.Body[] = [];
   private bumpers: Matter.Body[] = [];
-
+  private loadedImages = new Map<string, HTMLImageElement>();
   private cameraY = 0;
 
   constructor(
@@ -201,7 +319,36 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       this.router.navigate(['/']);
       return;
     }
-    setTimeout(() => this.initPhysics(), 100);
+    this.preloadImages().then(() => {
+      setTimeout(() => this.initPhysics(), 100);
+    });
+  }
+
+  async preloadImages() {
+    const promises = this.participants.map(item => {
+      if (!item.avatarUrl) return Promise.resolve();
+      if (!this.loadedImages.has(item.avatarUrl)) {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            this.loadedImages.set(item.avatarUrl, img);
+            resolve();
+          };
+          img.onerror = () => {
+            const fallback = new Image();
+            fallback.onload = () => {
+              this.loadedImages.set(item.avatarUrl, fallback);
+              resolve();
+            };
+            fallback.onerror = () => resolve();
+            fallback.src = 'https://api.dicebear.com/7.x/pixel-art/png?seed=' + encodeURIComponent(item.name);
+          };
+          img.src = item.avatarUrl;
+        });
+      }
+      return Promise.resolve();
+    });
+    await Promise.all(promises);
   }
 
   ngOnDestroy() {
@@ -226,8 +373,8 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     const width = canvas.parentElement?.clientWidth || 800;
     const viewHeight = canvas.parentElement?.clientHeight || 600;
 
-    // Massive track length
-    const trackHeight = 4000;
+    // Massive track length (increased further for an epic descent)
+    const trackHeight = 5600;
 
     const Engine = Matter.Engine,
       Render = Matter.Render,
@@ -312,8 +459,8 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     const propellerPositions: {x: number, y: number}[] = [];
     for (let i = 0; i < numPropellers; i++) {
       const px = width * (0.2 + (Math.random() * 0.6));
-      // Spread them from y=400 down to y=3600
-      const py = 400 + (i * (3200 / numPropellers)) + (Math.random() * 100 - 50);
+      // Spread them from y=400 down to y=5200 (adjusted for 5600px trackHeight)
+      const py = 400 + (i * (4800 / numPropellers)) + (Math.random() * 100 - 50);
       propellerPositions.push({x: px, y: py});
 
       const spinner = Bodies.rectangle(px, py, 150 + Math.random() * 50, 20, {
@@ -340,7 +487,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     const numAnimals = 10;
     for (let i = 0; i < numAnimals; i++) {
       const startX = width * 0.5;
-      const startY = 500 + (i * (3000 / numAnimals));
+      const startY = 500 + (i * (4600 / numAnimals)); // Adjusted for 5600px trackHeight
 
       const animalBody = Bodies.circle(startX, startY, 25, {
         isStatic: false,
@@ -396,6 +543,19 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       this.bumpers.push(bumper);
       Composite.add(this.engine.world, bumper);
     }
+
+    // Add Speed Boosters (Aceleradores Turbo)
+    const boosterYPositions = [1200, 2400, 4000];
+    boosterYPositions.forEach(by => {
+      const booster = Bodies.rectangle(width / 2, by, width * 0.75, 60, {
+        isStatic: true,
+        isSensor: true,
+        label: 'booster',
+        render: { visible: false }
+      });
+      this.boosters.push(booster);
+      Composite.add(this.engine.world, booster);
+    });
 
     // Funnels at the bottom
     const funnelLeft = Bodies.rectangle(width * 0.15, trackHeight - 150, width * 0.6, 40, {
@@ -471,6 +631,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
 
             if (this.results.length === this.participants.length) {
               this.raceFinished = true;
+              this.soundService.stopAmbientMusic();
             }
           }
         }
@@ -488,6 +649,17 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
               y: (dy / dist) * 0.06
             });
             this.soundService.playClack(10);
+          }
+        }
+        else if (bodyA.label === 'booster' || bodyB.label === 'booster') {
+          const marbleBody = bodyA.label === 'booster' ? bodyB : bodyA;
+          if (marbleBody.label && marbleBody.label.startsWith('marble-')) {
+            // Satisfying rocket speed boost downward
+            Matter.Body.applyForce(marbleBody, marbleBody.position, {
+              x: 0,
+              y: 0.12
+            });
+            this.soundService.playClack(25);
           }
         }
         else {
@@ -600,7 +772,51 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.stroke();
       });
 
-      // Draw Spinners
+      // Draw Speed Boosters
+      this.boosters.forEach(booster => {
+        if (booster.bounds.max.y < this.cameraY || booster.bounds.min.y > this.cameraY + viewHeight) return;
+
+        const pos = booster.position;
+        const w = width * 0.75;
+        const h = 60;
+
+        context.save();
+        context.translate(pos.x, pos.y);
+
+        // Cyberpunk booster lane neon glow
+        context.fillStyle = 'rgba(34, 197, 94, 0.12)';
+        context.fillRect(-w / 2, -h / 2, w, h);
+        
+        context.strokeStyle = 'rgba(34, 197, 94, 0.5)';
+        context.lineWidth = 2;
+        context.strokeRect(-w / 2, -h / 2, w, h);
+
+        // Animated neon chevrons pointing downward
+        const arrowCount = 8;
+        const spacing = w / arrowCount;
+        context.fillStyle = 'rgba(34, 197, 94, 0.8)';
+        context.shadowColor = '#22c55e';
+        context.shadowBlur = 6;
+        
+        const timeShift = (Date.now() / 150) % 20;
+
+        for (let i = 0; i < arrowCount; i++) {
+          const ax = -w / 2 + (i * spacing) + spacing / 2;
+          context.beginPath();
+          context.moveTo(ax - 12, -12 + timeShift / 2);
+          context.lineTo(ax, 4 + timeShift / 2);
+          context.lineTo(ax + 12, -12 + timeShift / 2);
+          context.lineTo(ax + 12, -4 + timeShift / 2);
+          context.lineTo(ax, 12 + timeShift / 2);
+          context.lineTo(ax - 12, -4 + timeShift / 2);
+          context.closePath();
+          context.fill();
+        }
+
+        context.restore();
+      });
+
+      // Draw Spinners (Futuristic Neon Energy Blades)
       this.spinners.forEach(spinner => {
         if (spinner.bounds.max.y < this.cameraY || spinner.bounds.min.y > this.cameraY + viewHeight) return;
 
@@ -609,23 +825,31 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.rotate(spinner.angle);
 
         const w = 150;
-        const h = 20;
+        const h = 18;
 
-        context.fillStyle = 'rgba(0,0,0,0.5)';
-        context.fillRect(-w / 2 + 5, -h / 2 + 10, w, h);
+        // Blurred shadow glow
+        context.shadowColor = '#ff4b2b';
+        context.shadowBlur = 12;
 
-        const grad = context.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
-        grad.addColorStop(0, '#fca311');
-        grad.addColorStop(1, '#d62828');
+        const grad = context.createLinearGradient(-w / 2, 0, w / 2, 0);
+        grad.addColorStop(0, '#ff416c');
+        grad.addColorStop(0.5, '#ff4b2b');
+        grad.addColorStop(1, '#ff416c');
+
         context.fillStyle = grad;
-        context.fillRect(-w / 2, -h / 2, w, h);
-        context.strokeStyle = '#000';
-        context.strokeRect(-w / 2, -h / 2, w, h);
+        context.beginPath();
+        // Modern rounded rect
+        context.roundRect(-w / 2, -h / 2, w, h, 6);
+        context.fill();
 
+        // Silver center cap
+        context.shadowBlur = 0;
         context.beginPath();
         context.arc(0, 0, 10, 0, Math.PI * 2);
-        context.fillStyle = '#666';
+        context.fillStyle = '#f1f5f9';
         context.fill();
+        context.strokeStyle = '#0f172a';
+        context.lineWidth = 1.5;
         context.stroke();
 
         context.restore();
@@ -655,84 +879,118 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.shadowOffsetY = 0;
       });
 
-      // Draw Bumpers (Pinball)
+      // Draw Bumpers (Cybernetic Glowing Ports)
       this.bumpers.forEach(bumper => {
         if (bumper.bounds.max.y < this.cameraY || bumper.bounds.min.y > this.cameraY + viewHeight) return;
 
         const pos = bumper.position;
-        const r = 30; // same as physics radius
+        const r = 30;
 
-        // Outer glow
+        // Cyber glow ring
         context.beginPath();
         context.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-        context.fillStyle = '#ff00ff';
-        context.shadowColor = '#ff00ff';
-        context.shadowBlur = 15;
+        context.fillStyle = 'rgba(6, 182, 212, 0.15)';
+        context.shadowColor = '#06b6d4';
+        context.shadowBlur = 16;
         context.fill();
 
-        // Inner circle
+        // Blue outer neon stroke
         context.beginPath();
-        context.arc(pos.x, pos.y, r * 0.6, 0, Math.PI * 2);
-        context.fillStyle = '#fff';
-        context.shadowBlur = 0;
+        context.arc(pos.x, pos.y, r - 3, 0, Math.PI * 2);
+        context.strokeStyle = '#06b6d4';
+        context.lineWidth = 3;
+        context.stroke();
+
+        // Bright white center core
+        context.beginPath();
+        context.arc(pos.x, pos.y, r * 0.4, 0, Math.PI * 2);
+        context.fillStyle = '#ffffff';
+        context.shadowBlur = 8;
         context.fill();
         
-        context.lineWidth = 3;
-        context.strokeStyle = '#fff';
-        context.stroke();
+        context.shadowBlur = 0;
       });
 
-      // Draw Marbles
+      // Draw Marbles (Freak Marbles - Spherical Rolling Characters)
       this.marbleBodies.forEach(m => {
         if (m.finished) return;
 
         const pos = m.body.position;
         const r = m.radius;
 
+        // Shadow
         context.beginPath();
-        context.ellipse(pos.x + 5, pos.y + r + 5, r, r * 0.4, 0, 0, Math.PI * 2);
-        context.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        context.fill();
-
-        const grad = context.createRadialGradient(
-          pos.x - r * 0.3, pos.y - r * 0.3, r * 0.1,
-          pos.x, pos.y, r
-        );
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.3, m.color);
-        grad.addColorStop(1, '#000000');
-
-        context.beginPath();
-        context.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-        context.fillStyle = grad;
+        context.ellipse(pos.x + 4, pos.y + r + 4, r * 0.9, r * 0.35, 0, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(0, 0, 0, 0.4)';
         context.fill();
 
         context.save();
         context.translate(pos.x, pos.y);
         context.rotate(m.body.angle);
+
+        // Spherical colorful shell
         context.beginPath();
-        context.moveTo(0, -r);
-        context.lineTo(0, r);
-        context.moveTo(-r, 0);
-        context.lineTo(r, 0);
-        context.strokeStyle = 'rgba(255,255,255,0.3)';
-        context.lineWidth = 2;
+        context.arc(0, 0, r, 0, Math.PI * 2);
+        context.fillStyle = m.color;
+        context.fill();
+
+        // Crop & Draw avatar face (creates the character Freak Marble!)
+        const img = this.loadedImages.get(m.participant.avatarUrl);
+        if (img) {
+          context.save();
+          context.beginPath();
+          const cropRadius = r * 0.74;
+          context.arc(0, 0, cropRadius, 0, Math.PI * 2);
+          context.clip();
+          context.drawImage(img, -cropRadius, -cropRadius, cropRadius * 2, cropRadius * 2);
+          context.restore();
+        } else {
+          // Monogram fallback
+          context.fillStyle = '#ffffff';
+          context.font = 'bold 15px Outfit';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillText(m.participant.name.trim().charAt(0).toUpperCase(), 0, 0);
+        }
+
+        // Spherical radial gloss overlay
+        const glossGrad = context.createRadialGradient(
+          -r * 0.3, -r * 0.3, r * 0.1,
+          0, 0, r
+        );
+        glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+        glossGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.15)');
+        glossGrad.addColorStop(0.8, 'rgba(0, 0, 0, 0.0)');
+        glossGrad.addColorStop(1, 'rgba(0, 0, 0, 0.65)');
+        
+        context.beginPath();
+        context.arc(0, 0, r, 0, Math.PI * 2);
+        context.fillStyle = glossGrad;
+        context.fill();
+
+        // Silver border ring
+        context.beginPath();
+        context.arc(0, 0, r, 0, Math.PI * 2);
+        context.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        context.lineWidth = 1.5;
         context.stroke();
+
         context.restore();
 
+        // Text labels above rolling marble
         if (pos.y > this.cameraY - 50) {
-          const fullName = m.participant.name;
-          context.font = 'bold 14px Arial';
+          const name = m.participant.name;
+          context.font = 'bold 13px Outfit';
           context.textAlign = 'center';
           context.fillStyle = '#ffffff';
-          context.shadowColor = 'rgba(0,0,0,0.8)';
+          context.shadowColor = 'rgba(0,0,0,0.85)';
           context.shadowBlur = 4;
-          context.fillText(fullName, pos.x, pos.y - r - 10);
+          context.fillText(name, pos.x, pos.y - r - 8);
           context.shadowBlur = 0;
         }
       });
 
-      context.restore(); // Restore the camera transform
+      context.restore(); // Restore camera transformxt.restore(); // Restore the camera transform
     });
   }
 
@@ -741,5 +999,36 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     this.startTime = Date.now();
     const bodies = this.marbleBodies.map(m => m.body);
     Matter.Composite.add(this.engine.world, bodies);
+    this.soundService.startAmbientMusic();
+  }
+
+  restartRace() {
+    this.raceStarted = false;
+    this.raceFinished = false;
+    this.results = [];
+    this.cameraY = 0;
+
+    // Clear Matter engines
+    if (this.runner) {
+      Matter.Runner.stop(this.runner);
+    }
+    if (this.render) {
+      Matter.Render.stop(this.render);
+      this.render.canvas.remove();
+    }
+    if (this.engine) {
+      Matter.Engine.clear(this.engine);
+    }
+
+    // Reset arrays
+    this.marbleBodies = [];
+    this.spinners = [];
+    this.rocks = [];
+    this.animals = [];
+    this.bumpers = [];
+    this.boosters = [];
+
+    // Re-initialize physics
+    this.initPhysics();
   }
 }
