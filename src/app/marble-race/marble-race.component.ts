@@ -302,8 +302,9 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
   private spinners: Matter.Body[] = [];
   private rocks: Matter.Body[] = [];
   private animals: { body: Matter.Body, emoji: string, dir: number, speed: number }[] = [];
+  private boosters: Matter.Body[] = [];
   private bumpers: Matter.Body[] = [];
-
+  private loadedImages = new Map<string, HTMLImageElement>();
   private cameraY = 0;
 
   constructor(
@@ -318,7 +319,36 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       this.router.navigate(['/']);
       return;
     }
-    setTimeout(() => this.initPhysics(), 100);
+    this.preloadImages().then(() => {
+      setTimeout(() => this.initPhysics(), 100);
+    });
+  }
+
+  async preloadImages() {
+    const promises = this.participants.map(item => {
+      if (!item.avatarUrl) return Promise.resolve();
+      if (!this.loadedImages.has(item.avatarUrl)) {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            this.loadedImages.set(item.avatarUrl, img);
+            resolve();
+          };
+          img.onerror = () => {
+            const fallback = new Image();
+            fallback.onload = () => {
+              this.loadedImages.set(item.avatarUrl, fallback);
+              resolve();
+            };
+            fallback.onerror = () => resolve();
+            fallback.src = 'https://api.dicebear.com/7.x/pixel-art/png?seed=' + encodeURIComponent(item.name);
+          };
+          img.src = item.avatarUrl;
+        });
+      }
+      return Promise.resolve();
+    });
+    await Promise.all(promises);
   }
 
   ngOnDestroy() {
@@ -514,6 +544,19 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
       Composite.add(this.engine.world, bumper);
     }
 
+    // Add Speed Boosters (Aceleradores Turbo)
+    const boosterYPositions = [1200, 2400, 4000];
+    boosterYPositions.forEach(by => {
+      const booster = Bodies.rectangle(width / 2, by, width * 0.75, 60, {
+        isStatic: true,
+        isSensor: true,
+        label: 'booster',
+        render: { visible: false }
+      });
+      this.boosters.push(booster);
+      Composite.add(this.engine.world, booster);
+    });
+
     // Funnels at the bottom
     const funnelLeft = Bodies.rectangle(width * 0.15, trackHeight - 150, width * 0.6, 40, {
       isStatic: true,
@@ -606,6 +649,17 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
               y: (dy / dist) * 0.06
             });
             this.soundService.playClack(10);
+          }
+        }
+        else if (bodyA.label === 'booster' || bodyB.label === 'booster') {
+          const marbleBody = bodyA.label === 'booster' ? bodyB : bodyA;
+          if (marbleBody.label && marbleBody.label.startsWith('marble-')) {
+            // Satisfying rocket speed boost downward
+            Matter.Body.applyForce(marbleBody, marbleBody.position, {
+              x: 0,
+              y: 0.12
+            });
+            this.soundService.playClack(25);
           }
         }
         else {
@@ -718,7 +772,51 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.stroke();
       });
 
-      // Draw Spinners
+      // Draw Speed Boosters
+      this.boosters.forEach(booster => {
+        if (booster.bounds.max.y < this.cameraY || booster.bounds.min.y > this.cameraY + viewHeight) return;
+
+        const pos = booster.position;
+        const w = width * 0.75;
+        const h = 60;
+
+        context.save();
+        context.translate(pos.x, pos.y);
+
+        // Cyberpunk booster lane neon glow
+        context.fillStyle = 'rgba(34, 197, 94, 0.12)';
+        context.fillRect(-w / 2, -h / 2, w, h);
+        
+        context.strokeStyle = 'rgba(34, 197, 94, 0.5)';
+        context.lineWidth = 2;
+        context.strokeRect(-w / 2, -h / 2, w, h);
+
+        // Animated neon chevrons pointing downward
+        const arrowCount = 8;
+        const spacing = w / arrowCount;
+        context.fillStyle = 'rgba(34, 197, 94, 0.8)';
+        context.shadowColor = '#22c55e';
+        context.shadowBlur = 6;
+        
+        const timeShift = (Date.now() / 150) % 20;
+
+        for (let i = 0; i < arrowCount; i++) {
+          const ax = -w / 2 + (i * spacing) + spacing / 2;
+          context.beginPath();
+          context.moveTo(ax - 12, -12 + timeShift / 2);
+          context.lineTo(ax, 4 + timeShift / 2);
+          context.lineTo(ax + 12, -12 + timeShift / 2);
+          context.lineTo(ax + 12, -4 + timeShift / 2);
+          context.lineTo(ax, 12 + timeShift / 2);
+          context.lineTo(ax - 12, -4 + timeShift / 2);
+          context.closePath();
+          context.fill();
+        }
+
+        context.restore();
+      });
+
+      // Draw Spinners (Futuristic Neon Energy Blades)
       this.spinners.forEach(spinner => {
         if (spinner.bounds.max.y < this.cameraY || spinner.bounds.min.y > this.cameraY + viewHeight) return;
 
@@ -727,23 +825,31 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.rotate(spinner.angle);
 
         const w = 150;
-        const h = 20;
+        const h = 18;
 
-        context.fillStyle = 'rgba(0,0,0,0.5)';
-        context.fillRect(-w / 2 + 5, -h / 2 + 10, w, h);
+        // Blurred shadow glow
+        context.shadowColor = '#ff4b2b';
+        context.shadowBlur = 12;
 
-        const grad = context.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
-        grad.addColorStop(0, '#fca311');
-        grad.addColorStop(1, '#d62828');
+        const grad = context.createLinearGradient(-w / 2, 0, w / 2, 0);
+        grad.addColorStop(0, '#ff416c');
+        grad.addColorStop(0.5, '#ff4b2b');
+        grad.addColorStop(1, '#ff416c');
+
         context.fillStyle = grad;
-        context.fillRect(-w / 2, -h / 2, w, h);
-        context.strokeStyle = '#000';
-        context.strokeRect(-w / 2, -h / 2, w, h);
+        context.beginPath();
+        // Modern rounded rect
+        context.roundRect(-w / 2, -h / 2, w, h, 6);
+        context.fill();
 
+        // Silver center cap
+        context.shadowBlur = 0;
         context.beginPath();
         context.arc(0, 0, 10, 0, Math.PI * 2);
-        context.fillStyle = '#666';
+        context.fillStyle = '#f1f5f9';
         context.fill();
+        context.strokeStyle = '#0f172a';
+        context.lineWidth = 1.5;
         context.stroke();
 
         context.restore();
@@ -773,84 +879,118 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
         context.shadowOffsetY = 0;
       });
 
-      // Draw Bumpers (Pinball)
+      // Draw Bumpers (Cybernetic Glowing Ports)
       this.bumpers.forEach(bumper => {
         if (bumper.bounds.max.y < this.cameraY || bumper.bounds.min.y > this.cameraY + viewHeight) return;
 
         const pos = bumper.position;
-        const r = 30; // same as physics radius
+        const r = 30;
 
-        // Outer glow
+        // Cyber glow ring
         context.beginPath();
         context.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-        context.fillStyle = '#ff00ff';
-        context.shadowColor = '#ff00ff';
-        context.shadowBlur = 15;
+        context.fillStyle = 'rgba(6, 182, 212, 0.15)';
+        context.shadowColor = '#06b6d4';
+        context.shadowBlur = 16;
         context.fill();
 
-        // Inner circle
+        // Blue outer neon stroke
         context.beginPath();
-        context.arc(pos.x, pos.y, r * 0.6, 0, Math.PI * 2);
-        context.fillStyle = '#fff';
-        context.shadowBlur = 0;
+        context.arc(pos.x, pos.y, r - 3, 0, Math.PI * 2);
+        context.strokeStyle = '#06b6d4';
+        context.lineWidth = 3;
+        context.stroke();
+
+        // Bright white center core
+        context.beginPath();
+        context.arc(pos.x, pos.y, r * 0.4, 0, Math.PI * 2);
+        context.fillStyle = '#ffffff';
+        context.shadowBlur = 8;
         context.fill();
         
-        context.lineWidth = 3;
-        context.strokeStyle = '#fff';
-        context.stroke();
+        context.shadowBlur = 0;
       });
 
-      // Draw Marbles
+      // Draw Marbles (Freak Marbles - Spherical Rolling Characters)
       this.marbleBodies.forEach(m => {
         if (m.finished) return;
 
         const pos = m.body.position;
         const r = m.radius;
 
+        // Shadow
         context.beginPath();
-        context.ellipse(pos.x + 5, pos.y + r + 5, r, r * 0.4, 0, 0, Math.PI * 2);
-        context.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        context.fill();
-
-        const grad = context.createRadialGradient(
-          pos.x - r * 0.3, pos.y - r * 0.3, r * 0.1,
-          pos.x, pos.y, r
-        );
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.3, m.color);
-        grad.addColorStop(1, '#000000');
-
-        context.beginPath();
-        context.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-        context.fillStyle = grad;
+        context.ellipse(pos.x + 4, pos.y + r + 4, r * 0.9, r * 0.35, 0, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(0, 0, 0, 0.4)';
         context.fill();
 
         context.save();
         context.translate(pos.x, pos.y);
         context.rotate(m.body.angle);
+
+        // Spherical colorful shell
         context.beginPath();
-        context.moveTo(0, -r);
-        context.lineTo(0, r);
-        context.moveTo(-r, 0);
-        context.lineTo(r, 0);
-        context.strokeStyle = 'rgba(255,255,255,0.3)';
-        context.lineWidth = 2;
+        context.arc(0, 0, r, 0, Math.PI * 2);
+        context.fillStyle = m.color;
+        context.fill();
+
+        // Crop & Draw avatar face (creates the character Freak Marble!)
+        const img = this.loadedImages.get(m.participant.avatarUrl);
+        if (img) {
+          context.save();
+          context.beginPath();
+          const cropRadius = r * 0.74;
+          context.arc(0, 0, cropRadius, 0, Math.PI * 2);
+          context.clip();
+          context.drawImage(img, -cropRadius, -cropRadius, cropRadius * 2, cropRadius * 2);
+          context.restore();
+        } else {
+          // Monogram fallback
+          context.fillStyle = '#ffffff';
+          context.font = 'bold 15px Outfit';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillText(m.participant.name.trim().charAt(0).toUpperCase(), 0, 0);
+        }
+
+        // Spherical radial gloss overlay
+        const glossGrad = context.createRadialGradient(
+          -r * 0.3, -r * 0.3, r * 0.1,
+          0, 0, r
+        );
+        glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+        glossGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.15)');
+        glossGrad.addColorStop(0.8, 'rgba(0, 0, 0, 0.0)');
+        glossGrad.addColorStop(1, 'rgba(0, 0, 0, 0.65)');
+        
+        context.beginPath();
+        context.arc(0, 0, r, 0, Math.PI * 2);
+        context.fillStyle = glossGrad;
+        context.fill();
+
+        // Silver border ring
+        context.beginPath();
+        context.arc(0, 0, r, 0, Math.PI * 2);
+        context.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        context.lineWidth = 1.5;
         context.stroke();
+
         context.restore();
 
+        // Text labels above rolling marble
         if (pos.y > this.cameraY - 50) {
-          const fullName = m.participant.name;
-          context.font = 'bold 14px Arial';
+          const name = m.participant.name;
+          context.font = 'bold 13px Outfit';
           context.textAlign = 'center';
           context.fillStyle = '#ffffff';
-          context.shadowColor = 'rgba(0,0,0,0.8)';
+          context.shadowColor = 'rgba(0,0,0,0.85)';
           context.shadowBlur = 4;
-          context.fillText(fullName, pos.x, pos.y - r - 10);
+          context.fillText(name, pos.x, pos.y - r - 8);
           context.shadowBlur = 0;
         }
       });
 
-      context.restore(); // Restore the camera transform
+      context.restore(); // Restore camera transformxt.restore(); // Restore the camera transform
     });
   }
 
@@ -886,6 +1026,7 @@ export class MarbleRaceComponent implements OnInit, OnDestroy {
     this.rocks = [];
     this.animals = [];
     this.bumpers = [];
+    this.boosters = [];
 
     // Re-initialize physics
     this.initPhysics();
