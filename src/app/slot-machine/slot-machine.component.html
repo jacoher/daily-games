@@ -1,0 +1,226 @@
+<div class="slot-page-container">
+  <!-- Top Navigation Bar -->
+  <header class="slot-header">
+    <button (click)="goBack()" class="back-button" title="Volver al menú principal">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span>Volver</span>
+    </button>
+
+    <div class="badge-counter">
+      <span class="badge-dot"></span>
+      <span>{{ activeParticipants.length }} PARTICIPANTES EN JUEGO</span>
+    </div>
+  </header>
+
+  <!-- Casino Stage -->
+  <main class="casino-stage">
+    <!-- Slot Cabinet -->
+    <div class="machine-chassis">
+      
+      <!-- Marquee / Crown -->
+      <div class="marquee-header">
+        <div class="bulb-row">
+          <span class="bulb"></span>
+          <span class="bulb"></span>
+          <span class="bulb"></span>
+        </div>
+
+        <div class="marquee-title">
+          <h1>LUCKY SLOTS</h1>
+          <p>★ CASINO ROYALE JACKPOT ★</p>
+        </div>
+
+        <div class="bulb-row">
+          <span class="bulb"></span>
+          <span class="bulb"></span>
+          <span class="bulb"></span>
+        </div>
+      </div>
+
+      <!-- Reels Screen -->
+      <div class="reels-outer-frame">
+        <div class="payline-marker-left">▶</div>
+        <div class="payline-marker-right">◀</div>
+        <div class="payline-guide"></div>
+
+        <div class="reels-viewport">
+          <!-- Reel 1 -->
+          <div class="reel-column">
+            <div
+              class="reel-strip"
+              [class.spinning-loop]="isReelSpinning[0]"
+              [style.transform]="isReelSpinning[0] ? null : 'translateY(' + reelOffsets[0] + 'px)'"
+              [style.transition]="isReelSpinning[0] ? 'none' : reelTransitions[0]"
+            >
+              @for (item of reelStrips[0]; track $index) {
+                <div class="strip-item">
+                  @if (item.type === 'participant') {
+                    <div class="avatar-disc">
+                      <img
+                        [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
+                        [alt]="item.name"
+                        class="avatar-img"
+                      />
+                    </div>
+                    <span class="participant-name">{{ item.name }}</span>
+                  } @else {
+                    <div class="casino-symbol-disc">
+                      <span class="casino-symbol-icon">{{ item.icon }}</span>
+                    </div>
+                    <span class="participant-name text-amber-400 font-black">{{ item.name }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Reel 2 -->
+          <div class="reel-column">
+            <div
+              class="reel-strip"
+              [class.spinning-loop]="isReelSpinning[1]"
+              [style.transform]="isReelSpinning[1] ? null : 'translateY(' + reelOffsets[1] + 'px)'"
+              [style.transition]="isReelSpinning[1] ? 'none' : reelTransitions[1]"
+            >
+              @for (item of reelStrips[1]; track $index) {
+                <div class="strip-item">
+                  @if (item.type === 'participant') {
+                    <div class="avatar-disc">
+                      <img
+                        [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
+                        [alt]="item.name"
+                        class="avatar-img"
+                      />
+                    </div>
+                    <span class="participant-name">{{ item.name }}</span>
+                  } @else {
+                    <div class="casino-symbol-disc">
+                      <span class="casino-symbol-icon">{{ item.icon }}</span>
+                    </div>
+                    <span class="participant-name text-amber-400 font-black">{{ item.name }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Reel 3 -->
+          <div class="reel-column">
+            <div
+              class="reel-strip"
+              [class.spinning-loop]="isReelSpinning[2]"
+              [style.transform]="isReelSpinning[2] ? null : 'translateY(' + reelOffsets[2] + 'px)'"
+              [style.transition]="isReelSpinning[2] ? 'none' : reelTransitions[2]"
+            >
+              @for (item of reelStrips[2]; track $index) {
+                <div class="strip-item">
+                  @if (item.type === 'participant') {
+                    <div class="avatar-disc">
+                      <img
+                        [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
+                        [alt]="item.name"
+                        class="avatar-img"
+                      />
+                    </div>
+                    <span class="participant-name">{{ item.name }}</span>
+                  } @else {
+                    <div class="casino-symbol-disc">
+                      <span class="casino-symbol-icon">{{ item.icon }}</span>
+                    </div>
+                    <span class="participant-name text-amber-400 font-black">{{ item.name }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Controls -->
+      <div class="control-dashboard">
+        <div class="status-display">
+          <div class="status-light" [class.spinning]="isSpinning"></div>
+          <div class="status-texts">
+            <span class="status-label">ESTADO DE LA MÁQUINA</span>
+            <span class="status-value">
+              {{ isSpinning ? '¡GIRANDO RODILLOS...!' : (activeParticipants.length > 1 ? 'LISTO PARA TIRAR' : 'MÍNIMO 2 PARTICIPANTES') }}
+            </span>
+          </div>
+        </div>
+
+        <button
+          (click)="pullLever()"
+          [disabled]="isSpinning || activeParticipants.length < 2"
+          class="spin-action-btn"
+          title="Presiona para girar los rodillos"
+        >
+          <span>🎰</span>
+          <span>{{ isSpinning ? 'EN JUEGO...' : 'TIRAR PALANCA' }}</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Realistic Mechanical Side Lever (Drag / Pull physics) -->
+    <div
+      class="lever-assembly"
+      [class.dragging]="isDraggingLever"
+      (mousedown)="onLeverMouseDown($event)"
+      (touchstart)="onLeverTouchStart($event)"
+      title="¡Haz clic o arrastra la palanca hacia abajo!"
+    >
+      <div class="lever-socket"></div>
+      <div class="lever-hinge"></div>
+      <div
+        class="lever-rod"
+        [style.transform]="leverTransform"
+        [style.transition]="leverTransition"
+      >
+        <div class="lever-ball"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom shortcut guide -->
+  <footer class="slot-footer">
+    <span>Tip: Presiona <kbd class="key-badge">Espacio</kbd> o <kbd class="key-badge">Enter</kbd> para activar la palanca.</span>
+  </footer>
+
+  <!-- Winner Modal -->
+  @if (winnerModalOpen && selectedWinner) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <div class="winner-crown-badge">
+          <span>👑</span>
+          <span>¡GANADOR DEL JACKPOT!</span>
+        </div>
+
+        <div class="winner-avatar-frame">
+          <img
+            [src]="selectedWinner.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + selectedWinner.name"
+            [alt]="selectedWinner.name"
+          />
+          <div class="winner-crown-icon">🎉</div>
+        </div>
+
+        <h2 class="winner-title-text">{{ selectedWinner.name }}</h2>
+        <p class="winner-subtitle">¿Qué deseas hacer con el ganador?</p>
+
+        <div class="modal-actions">
+          <button (click)="keepWinner()" class="modal-btn modal-btn-keep">
+            <span>🔄 Mantener</span>
+            <small>Seguir jugando con todos</small>
+          </button>
+
+          <button (click)="removeWinner()" class="modal-btn modal-btn-remove">
+            <span>🗑️ Quitar del juego</span>
+            <small>Solo por esta partida</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,724 @@
+/* =========================================================
+   Ultra-Clean Casino Slot Machine Styles
+   Transparent backdrop (inherits app background) - Casino Icons & Random Winner Reel
+   ========================================================= */
+
+:host {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Container: completely transparent so app's cosmic star background is visible */
+.slot-page-container {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 4rem);
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Header */
+.slot-header {
+  width: 100%;
+  max-width: 860px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  z-index: 20;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  color: #e4e4e7;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  transform: translateX(-3px);
+}
+
+.badge-counter {
+  padding: 0.4rem 1rem;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+/* =========================================================
+   Casino Stage & Standalone Machine Chassis
+   ========================================================= */
+.casino-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto 0;
+  z-index: 10;
+  width: 100%;
+  max-width: 860px;
+}
+
+.machine-chassis {
+  position: relative;
+  width: 100%;
+  max-width: 660px;
+  background: linear-gradient(175deg, rgba(24, 24, 27, 0.95) 0%, rgba(17, 17, 19, 0.96) 50%, rgba(9, 9, 11, 0.98) 100%);
+  border-radius: 36px;
+  border: 3px solid #d97706;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9),
+              0 0 45px rgba(245, 158, 11, 0.25),
+              inset 0 2px 4px rgba(255, 255, 255, 0.2),
+              inset 0 -3px 8px rgba(0, 0, 0, 0.8);
+  padding: clamp(1.2rem, 3vw, 2rem);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  backdrop-filter: blur(16px);
+}
+
+/* Machine Crown / Marquee */
+.marquee-header {
+  position: relative;
+  width: 100%;
+  background: linear-gradient(90deg, #581c87 0%, #7c3aed 50%, #581c87 100%);
+  border-radius: 20px;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6),
+              inset 0 2px 4px rgba(255, 255, 255, 0.35);
+  padding: 0.85rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.bulb-row {
+  display: flex;
+  gap: 6px;
+}
+
+.bulb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fef08a;
+  box-shadow: 0 0 8px #fbbf24, 0 0 15px #f59e0b;
+  animation: bulb-blink 0.8s infinite alternate ease-in-out;
+}
+
+.bulb:nth-child(2) { animation-delay: 0.25s; }
+.bulb:nth-child(3) { animation-delay: 0.5s; }
+
+@keyframes bulb-blink {
+  0% { opacity: 0.3; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 6px #fde047); }
+}
+
+.marquee-title {
+  text-align: center;
+}
+
+.marquee-title h1 {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: 3px;
+  background: linear-gradient(180deg, #ffffff 0%, #fde047 40%, #f59e0b 80%, #b45309 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+}
+
+.marquee-title p {
+  margin: 2px 0 0 0;
+  font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+  letter-spacing: 2px;
+  font-weight: 700;
+  color: #fef3c7;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   Reels Frame & High-Speed Vertical Spinning
+   ========================================================= */
+.reels-outer-frame {
+  position: relative;
+  width: 100%;
+  background: #09090b;
+  border-radius: 24px;
+  border: 3px solid #b45309;
+  padding: 8px;
+  box-shadow: inset 0 8px 25px rgba(0, 0, 0, 0.95),
+              0 8px 24px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
+}
+
+.payline-guide {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 120px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, 
+              rgba(245, 158, 11, 0.06) 0%, 
+              rgba(245, 158, 11, 0.2) 50%, 
+              rgba(245, 158, 11, 0.06) 100%);
+  border-top: 2px dashed rgba(245, 158, 11, 0.75);
+  border-bottom: 2px dashed rgba(245, 158, 11, 0.75);
+  pointer-events: none;
+  z-index: 15;
+}
+
+.payline-marker-left,
+.payline-marker-right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.4rem;
+  color: #fbbf24;
+  filter: drop-shadow(0 0 10px #f59e0b);
+  z-index: 20;
+  font-weight: 900;
+}
+
+.payline-marker-left { left: -14px; }
+.payline-marker-right { right: -14px; }
+
+/* 3 Reels Viewport with cylinder curvature shadows */
+.reels-viewport {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  height: 280px;
+  background: #000000;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: inset 0 30px 40px -10px rgba(0, 0, 0, 1),
+              inset 0 -30px 40px -10px rgba(0, 0, 0, 1);
+}
+
+.reels-viewport::before,
+.reels-viewport::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.reels-viewport::before {
+  top: 0;
+  height: 36%;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
+}
+
+.reels-viewport::after {
+  bottom: 0;
+  height: 36%;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
+}
+
+.reel-column {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.reel-column:last-child {
+  border-right: none;
+}
+
+.reel-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  will-change: transform;
+}
+
+/* Fast continuous spinning keyframes for dynamic motion */
+@keyframes fast-vertical-spin {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-720px); }
+}
+
+.spinning-loop {
+  animation: fast-vertical-spin 0.26s linear infinite !important;
+  filter: blur(3.5px) !important;
+}
+
+.strip-item {
+  height: 120px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Participant disc */
+.avatar-disc {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #78350f 100%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #18181b;
+}
+
+/* Classic casino symbol disc */
+.casino-symbol-disc {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #27272a, #18181b);
+  border: 2px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+}
+
+.casino-symbol-icon {
+  font-size: 2.2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.participant-name {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #f4f4f5;
+  text-align: center;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* =========================================================
+   Console Controls & Action Button
+   ========================================================= */
+.control-dashboard {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.status-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.65rem 1.1rem;
+}
+
+.status-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+
+.status-light.spinning {
+  background: #fbbf24;
+  box-shadow: 0 0 15px #fbbf24;
+  animation: bulb-blink 0.4s infinite alternate;
+}
+
+.status-texts {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #a1a1aa;
+  font-weight: 700;
+}
+
+.status-value {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.spin-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  color: #09090b;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 0.95rem 2.2rem;
+  border: none;
+  border-radius: 18px;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.45),
+              0 0 30px rgba(245, 158, 11, 0.25),
+              inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-grow: 1;
+}
+
+.spin-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(245, 158, 11, 0.6);
+  filter: brightness(1.08);
+}
+
+.spin-action-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.spin-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(80%);
+}
+
+/* =========================================================
+   Interactive Mechanical Realistic Lever
+   ========================================================= */
+.lever-assembly {
+  position: relative;
+  width: 80px;
+  height: 320px;
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 800px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.lever-assembly.dragging {
+  cursor: grabbing;
+}
+
+.lever-socket {
+  position: absolute;
+  bottom: 45px;
+  width: 52px;
+  height: 75px;
+  background: linear-gradient(135deg, #52525b 0%, #27272a 40%, #09090b 100%);
+  border: 2px solid #71717a;
+  border-radius: 8px 24px 24px 8px;
+  box-shadow: 8px 10px 24px rgba(0, 0, 0, 0.85),
+              inset 2px 2px 5px rgba(255, 255, 255, 0.3),
+              inset -2px -2px 5px rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+.lever-hinge {
+  position: absolute;
+  bottom: 72px;
+  left: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #a1a1aa 40%, #27272a 100%);
+  border: 2px solid #d4d4d8;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.9), inset 1px 1px 2px rgba(255, 255, 255, 0.6);
+  z-index: 15;
+}
+
+.lever-rod {
+  position: absolute;
+  bottom: 84px;
+  left: 26px;
+  width: 12px;
+  height: 165px;
+  background: linear-gradient(90deg, 
+              #71717a 0%, 
+              #e4e4e7 25%, 
+              #ffffff 45%, 
+              #d4d4d8 75%, 
+              #3f3f46 100%);
+  border-radius: 6px;
+  transform-origin: bottom center;
+  box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.6), inset 1px 0 2px rgba(255, 255, 255, 0.8);
+  z-index: 12;
+  will-change: transform;
+}
+
+.lever-ball {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #f87171 0%, #ef4444 30%, #b91c1c 70%, #450a0a 100%);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.7),
+              0 3px 6px rgba(0, 0, 0, 0.9),
+              inset 3px 3px 6px rgba(255, 255, 255, 0.6),
+              inset -2px -2px 4px rgba(0, 0, 0, 0.6);
+  border: 1px solid #fecaca;
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.lever-assembly:hover .lever-ball {
+  transform: translateX(-50%) scale(1.06);
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.8));
+}
+
+/* Footer shortcut note */
+.slot-footer {
+  text-align: center;
+  padding: 0.5rem 0;
+  color: #a1a1aa;
+  font-size: 0.85rem;
+  z-index: 10;
+}
+
+.key-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+/* =========================================================
+   Winner Celebration Modal
+   ========================================================= */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 100;
+  animation: fade-in 0.25s ease-out forwards;
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: linear-gradient(160deg, #18181b 0%, #09090b 100%);
+  border: 2px solid rgba(245, 158, 11, 0.6);
+  border-radius: 32px;
+  padding: 2.2rem 1.8rem;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95),
+              0 0 50px rgba(245, 158, 11, 0.35);
+  animation: pop-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-sizing: border-box;
+}
+
+.winner-crown-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 1.2rem;
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+  color: #09090b;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+
+.winner-avatar-frame {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+.winner-avatar-frame img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fbbf24;
+  box-shadow: 0 0 35px rgba(245, 158, 11, 0.7);
+  background: #18181b;
+}
+
+.winner-crown-icon {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #fbbf24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.winner-title-text {
+  font-size: 1.85rem;
+  font-weight: 900;
+  margin: 0.5rem 0;
+  background: linear-gradient(135deg, #ffffff 0%, #fef08a 50%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.winner-subtitle {
+  color: #a1a1aa;
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.modal-btn {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.25s ease;
+  border: none;
+}
+
+.modal-btn small {
+  font-weight: 500;
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+.modal-btn-keep {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #09090b;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4);
+}
+
+.modal-btn-keep:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.6);
+}
+
+.modal-btn-remove {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.modal-btn-remove:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.7);
+  color: #fee2e2;
+  transform: translateY(-2px);
+}
+
+@keyframes pop-up {
+  0% { transform: scale(0.85) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .lever-assembly {
+    display: none;
+  }
+  .modal-actions {
+    grid-template-columns: 1fr;
+  }
+  .control-dashboard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
