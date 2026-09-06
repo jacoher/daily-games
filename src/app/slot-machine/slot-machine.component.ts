@@ -14,13 +14,14 @@ import { SoundService } from '../sound.service';
   styleUrls: ['./slot-machine.component.css']
 })
 export class SlotMachineComponent implements OnInit, OnDestroy {
-  participants: Participant[] = [];
+  // Game session participants (isolated from persistent global list)
+  activeParticipants: Participant[] = [];
   
   // Slot reels state
   ITEM_HEIGHT = 120; // Matches CSS item height
   reelsCount = 3;
   reelStrips: Participant[][] = [[], [], []];
-  reelOffsets = [0, 0, 0];
+  reelOffsets = [80, 80, 80];
   reelTransitions = ['none', 'none', 'none'];
   isReelSpinning = [false, false, false];
 
@@ -29,19 +30,23 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
   isLeverPulled = false;
   winnerModalOpen = false;
   selectedWinner: Participant | null = null;
-  selectedWinnerIndex = -1;
 
   private isDraggingLever = false;
   private dragStartY = 0;
 
   constructor(
-    private participantService: ParticipantService,
+    public participantService: ParticipantService,
     private soundService: SoundService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.refreshParticipants();
+    // Copy participants for this session so removing only affects current game
+    this.activeParticipants = [...this.participantService.participants];
+    if (this.activeParticipants.length === 0) {
+      this.router.navigate(['/']);
+      return;
+    }
     this.buildReels();
   }
 
@@ -49,20 +54,15 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
     this.soundService.stopSlotSpinLoop();
   }
 
-  refreshParticipants(): void {
-    this.participants = [...this.participantService.participants];
-  }
-
   buildReels(): void {
-    if (this.participants.length === 0) {
+    if (this.activeParticipants.length === 0) {
       this.reelStrips = [[], [], []];
       return;
     }
 
-    // Prepare each reel strip with repeated participants for spinning effect
-    // 1 visible in center, with enough items ahead and behind
-    const baseList = this.participants;
-    const repeatCount = Math.max(12, Math.ceil(40 / baseList.length));
+    // Build strip with duplicated participants for smooth scroll & blur
+    const baseList = this.activeParticipants;
+    const repeatCount = Math.max(14, Math.ceil(40 / baseList.length));
 
     for (let r = 0; r < 3; r++) {
       const fullList: Participant[] = [];
@@ -71,8 +71,7 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
       }
       this.reelStrips[r] = fullList;
       
-      // Center position: viewport height (280px), item height (120px) -> center offset is (280 - 120)/2 = 80px
-      // Initial offset puts index 0 at center:
+      // Center position offset: (viewport 280px - item 120px) / 2 = 80px
       this.reelTransitions[r] = 'none';
       this.reelOffsets[r] = 80;
       this.isReelSpinning[r] = false;
@@ -91,7 +90,7 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
 
   // Drag-to-pull lever interactions
   onLeverMouseDown(event: MouseEvent): void {
-    if (this.isSpinning || this.participants.length < 2) return;
+    if (this.isSpinning || this.activeParticipants.length < 2) return;
     this.isDraggingLever = true;
     this.dragStartY = event.clientY;
 
@@ -118,7 +117,7 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
 
   // Trigger Lever and start casino spin sequence
   pullLever(): void {
-    if (this.isSpinning || this.participants.length < 2) return;
+    if (this.isSpinning || this.activeParticipants.length < 2) return;
 
     this.isSpinning = true;
     this.isLeverPulled = true;
@@ -131,61 +130,60 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
       this.isLeverPulled = false;
     }, 280);
 
-    // Pick random winning participant
-    const winnerIdx = Math.floor(Math.random() * this.participants.length);
-    this.selectedWinner = this.participants[winnerIdx];
-    this.selectedWinnerIndex = winnerIdx;
+    // Pick random winning participant from active participants
+    const winnerIdx = Math.floor(Math.random() * this.activeParticipants.length);
+    this.selectedWinner = this.activeParticipants[winnerIdx];
 
     // Start spin loop audio
     this.soundService.startSlotSpinLoop();
 
-    // Configure spin animations for each reel with cascading stops
-    // Center viewport target offset formula: 80 - (targetItemIndex * 120)
-    const baseRevolutions = 15;
-    const spinDurations = [2600, 3300, 4000]; // Reel 1, Reel 2, Reel 3
-
+    // Enable rapid continuous spinning on all reels
     for (let r = 0; r < 3; r++) {
       this.isReelSpinning[r] = true;
-      
-      // Target index within the strip to land on the winner:
-      // We choose an index far down the strip so it scrolls many times
-      const strip = this.reelStrips[r];
-      let targetIndex = -1;
-      const minIndex = baseRevolutions + (r * 4);
+      this.reelTransitions[r] = 'none';
+    }
 
-      for (let i = minIndex; i < strip.length; i++) {
-        if (strip[i].name === this.selectedWinner.name) {
-          targetIndex = i;
-          break;
-        }
-      }
+    // Cascading deceleration and landing
+    // Reel 1 stop: ~2.0s, Reel 2 stop: ~2.7s, Reel 3 stop: ~3.4s
+    const stopDelays = [2000, 2700, 3400];
 
-      if (targetIndex === -1) {
-        // Fallback safety
-        targetIndex = winnerIdx;
-      }
-
-      const targetOffset = 80 - (targetIndex * this.ITEM_HEIGHT);
-      const durationSeconds = (spinDurations[r] / 1000).toFixed(2);
-
-      // Reset transition first
-      this.reelTransitions[r] = `transform ${durationSeconds}s cubic-bezier(0.12, 0.85, 0.22, 1.04)`;
-      this.reelOffsets[r] = targetOffset;
-
-      // Handle reel stop events
+    stopDelays.forEach((delay, r) => {
       setTimeout(() => {
+        // Prepare target item index on the strip
+        const strip = this.reelStrips[r];
+        let targetIndex = -1;
+        const minIndex = 12 + (r * 3);
+
+        for (let i = minIndex; i < strip.length; i++) {
+          if (strip[i].name === this.selectedWinner!.name) {
+            targetIndex = i;
+            break;
+          }
+        }
+
+        if (targetIndex === -1) {
+          targetIndex = winnerIdx;
+        }
+
+        const targetOffset = 80 - (targetIndex * this.ITEM_HEIGHT);
+
+        // Turn off infinite rapid loop and engage smooth brake deceleration
         this.isReelSpinning[r] = false;
+        this.reelTransitions[r] = 'transform 0.65s cubic-bezier(0.15, 0.9, 0.25, 1.08)';
+        this.reelOffsets[r] = targetOffset;
+
+        // Play reel mechanical lock clack
         this.soundService.playSlotReelStop();
 
-        // When the final reel stops:
+        // When the 3rd and final reel locks in:
         if (r === 2) {
           this.soundService.stopSlotSpinLoop();
           setTimeout(() => {
             this.handleWinnerReveal();
           }, 350);
         }
-      }, spinDurations[r]);
-    }
+      }, delay);
+    });
   }
 
   handleWinnerReveal(): void {
@@ -223,11 +221,12 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
     }, 250);
   }
 
-  // Modal actions
+  // Modal actions: removes participant ONLY from current game session
   removeWinner(): void {
-    if (this.selectedWinnerIndex > -1) {
-      this.participantService.removeParticipant(this.selectedWinnerIndex);
-      this.refreshParticipants();
+    if (this.selectedWinner) {
+      this.activeParticipants = this.activeParticipants.filter(
+        p => p.name !== this.selectedWinner!.name
+      );
       this.buildReels();
     }
     this.closeModal();

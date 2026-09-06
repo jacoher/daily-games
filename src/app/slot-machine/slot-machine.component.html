@@ -9,11 +9,9 @@
       <span>Volver</span>
     </button>
 
-    <div class="title-badge">
-      <div class="badge-counter">
-        <span class="bulb" style="width: 8px; height: 8px;"></span>
-        <span>{{ participants.length }} PARTICIPANTES</span>
-      </div>
+    <div class="badge-counter">
+      <span class="badge-dot"></span>
+      <span>{{ activeParticipants.length }} PARTICIPANTES EN JUEGO</span>
     </div>
   </header>
 
@@ -53,9 +51,9 @@
           <div class="reel-column">
             <div
               class="reel-strip"
-              [class.blur-motion]="isReelSpinning[0]"
-              [style.transform]="'translateY(' + reelOffsets[0] + 'px)'"
-              [style.transition]="reelTransitions[0]"
+              [class.spinning-loop]="isReelSpinning[0]"
+              [style.transform]="isReelSpinning[0] ? null : 'translateY(' + reelOffsets[0] + 'px)'"
+              [style.transition]="isReelSpinning[0] ? 'none' : reelTransitions[0]"
             >
               @for (item of reelStrips[0]; track $index) {
                 <div class="strip-item">
@@ -76,9 +74,9 @@
           <div class="reel-column">
             <div
               class="reel-strip"
-              [class.blur-motion]="isReelSpinning[1]"
-              [style.transform]="'translateY(' + reelOffsets[1] + 'px)'"
-              [style.transition]="reelTransitions[1]"
+              [class.spinning-loop]="isReelSpinning[1]"
+              [style.transform]="isReelSpinning[1] ? null : 'translateY(' + reelOffsets[1] + 'px)'"
+              [style.transition]="isReelSpinning[1] ? 'none' : reelTransitions[1]"
             >
               @for (item of reelStrips[1]; track $index) {
                 <div class="strip-item">
@@ -99,9 +97,9 @@
           <div class="reel-column">
             <div
               class="reel-strip"
-              [class.blur-motion]="isReelSpinning[2]"
-              [style.transform]="'translateY(' + reelOffsets[2] + 'px)'"
-              [style.transition]="reelTransitions[2]"
+              [class.spinning-loop]="isReelSpinning[2]"
+              [style.transform]="isReelSpinning[2] ? null : 'translateY(' + reelOffsets[2] + 'px)'"
+              [style.transition]="isReelSpinning[2] ? 'none' : reelTransitions[2]"
             >
               @for (item of reelStrips[2]; track $index) {
                 <div class="strip-item">
@@ -127,14 +125,14 @@
           <div class="status-texts">
             <span class="status-label">ESTADO DE LA MÁQUINA</span>
             <span class="status-value">
-              {{ isSpinning ? '¡GIRANDO RODILLOS...!' : (participants.length > 1 ? 'LISTO PARA TIRAR' : 'MÍNIMO 2 PARTICIPANTES') }}
+              {{ isSpinning ? '¡GIRANDO RODILLOS...!' : (activeParticipants.length > 1 ? 'LISTO PARA TIRAR' : 'MÍNIMO 2 PARTICIPANTES') }}
             </span>
           </div>
         </div>
 
         <button
           (click)="pullLever()"
-          [disabled]="isSpinning || participants.length < 2"
+          [disabled]="isSpinning || activeParticipants.length < 2"
           class="spin-action-btn"
           title="Presiona para girar los rodillos"
         >
@@ -183,7 +181,7 @@
         </div>
 
         <h2 class="winner-title-text">{{ selectedWinner.name }}</h2>
-        <p class="winner-subtitle">¡La máquina tragamonedas ha seleccionado a este participante!</p>
+        <p class="winner-subtitle">¿Qué deseas hacer con el ganador?</p>
 
         <div class="modal-actions">
           <button (click)="keepWinner()" class="modal-btn modal-btn-keep">
@@ -192,8 +190,8 @@
           </button>
 
           <button (click)="removeWinner()" class="modal-btn modal-btn-remove">
-            <span>🗑️ Quitar</span>
-            <small>Eliminar de la lista</small>
+            <span>🗑️ Quitar del juego</span>
+            <small>Solo por esta partida</small>
           </button>
         </div>
       </div>
