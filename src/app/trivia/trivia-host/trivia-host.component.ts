@@ -176,6 +176,22 @@ import { ParticipantService } from '../../participant.service';
       </div>
     </div>
 
+    <!-- ⚡ Fastest Winner Banner -->
+    <div class="winner-highlight animate-in" *ngIf="roundWinner">
+      <span class="winner-trophy">⚡</span>
+      <img [src]="roundWinner.avatar" class="winner-av" (error)="onImgErr($event, roundWinner.name)" />
+      <div class="winner-info">
+        <span class="winner-title">¡El más rápido!</span>
+        <span class="winner-name">{{ roundWinner.name }} respondió en <strong>{{ roundWinner.seconds }}s</strong></span>
+      </div>
+      <span class="winner-pts">+{{ roundWinner.pointsGained }} pts</span>
+    </div>
+
+    <div class="no-winner-highlight animate-in" *ngIf="!roundWinner">
+      <span class="no-winner-icon">⏱️</span>
+      <span>Nadie respondió correctamente a tiempo</span>
+    </div>
+
     <p class="explanation" *ngIf="currentQ.explanation">💡 {{ currentQ.explanation }}</p>
 
     <div class="results-row">
@@ -438,6 +454,28 @@ import { ParticipantService } from '../../participant.service';
     /* REVEAL */
     .reveal-layout { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
     .reveal-title { font-size: 1.8rem; font-weight: 800; color: #22c55e; }
+
+    .winner-highlight {
+      display: flex; align-items: center; gap: 1.25rem;
+      background: linear-gradient(135deg, rgba(234,179,8,0.2), rgba(168,85,247,0.25));
+      border: 2px solid #fbbf24; border-radius: 20px;
+      padding: 1rem 1.75rem; width: 100%; max-width: 700px;
+      box-shadow: 0 0 30px rgba(251,191,36,0.3);
+    }
+    .winner-trophy { font-size: 2.2rem; filter: drop-shadow(0 0 8px rgba(251,191,36,0.6)); }
+    .winner-av { width: 52px; height: 52px; border-radius: 50%; border: 3px solid #fbbf24; }
+    .winner-info { display: flex; flex-direction: column; flex: 1; }
+    .winner-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #fbbf24; font-weight: 800; }
+    .winner-name { font-size: 1.2rem; font-weight: 700; color: #fff; }
+    .winner-pts { font-size: 1.4rem; font-weight: 900; color: #fbbf24; }
+
+    .no-winner-highlight {
+      display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+      background: rgba(255,255,255,0.06); border: 1px dashed rgba(255,255,255,0.2);
+      border-radius: 16px; padding: 0.9rem 1.5rem; width: 100%; max-width: 700px;
+      font-size: 1rem; color: rgba(255,255,255,0.7);
+    }
+    .no-winner-icon { font-size: 1.4rem; }
     .explanation {
       background: rgba(6,182,212,0.08); border-left: 3px solid #06b6d4;
       padding: 0.9rem 1.2rem; border-radius: 8px; font-size: 0.95rem;
@@ -514,6 +552,7 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   totalQ = 0;
   secondsLeft = 0;
   revealData: RevealData | null = null;
+  roundWinner: any = null;
   rankings: TriviaPlayer[] = [];
   currentAnswers: { [name: string]: string } = {};
 
@@ -529,7 +568,7 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   copied = false;
 
   get participantCount() { return this.participantService.participants.length; }
-  get answeredCount() { return Object.keys(this.currentAnswers).length; }
+  get answeredCount() { return this.triviaService.answeredCount$.value; }
   get answerPercent() { return this.players.length > 0 ? (this.answeredCount / this.players.length) * 100 : 0; }
   get ringOffset() { return 283 - (283 * this.secondsLeft / (this.triviaService.timeLimit || 20)); }
 
@@ -552,6 +591,7 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
       this.triviaService.secondsLeft$.subscribe(s => { this.secondsLeft = s; this.cdr.markForCheck(); }),
       this.triviaService.currentAnswers$.subscribe(a => { this.currentAnswers = a; this.cdr.markForCheck(); }),
       this.triviaService.revealData$.subscribe(r => { this.revealData = r; this.cdr.markForCheck(); }),
+      this.triviaService.roundWinner$.subscribe(w => { this.roundWinner = w; this.cdr.markForCheck(); }),
       this.triviaService.rankings$.subscribe(r => { this.rankings = r; this.cdr.markForCheck(); })
     );
   }

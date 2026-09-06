@@ -1,40 +1,48 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
-import Peer, { DataConnection } from 'peerjs';
+import { io, Socket } from 'socket.io-client';
 import { TRIVIA_QUESTIONS, TRIVIA_CATEGORIES } from './trivia-data';
 
 export type GamePhase = 'setup' | 'lobby' | 'question' | 'reveal' | 'finished' | 'error';
 
 export interface TriviaPlayer {
-  peerId: string;
+  socketId?: string;
+  peerId?: string;
   name: string;
   avatar: string;
   score: number;
   correctCount: number;
   wrongCount: number;
-  answers: { questionIndex: number; answerId: string; correct: boolean }[];
+  answers?: { questionIndex: number; answerId: string; correct: boolean }[];
 }
 
 export interface TriviaQuestion {
   id: string;
   text: string;
   options: { id: string; text: string }[];
-  correctId: string;
+  correctId?: string;
   category: string;
-  explanation: string;
+  explanation?: string;
+}
+
+export interface RoundWinner {
+  name: string;
+  avatar: string;
+  elapsedMs: number;
+  seconds: string;
+  pointsGained: number;
 }
 
 export interface RevealData {
   correctId: string;
   explanation: string;
   answers: { [playerName: string]: string };
+  roundWinner?: RoundWinner | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class TriviaService {
-  private peer: Peer | null = null;
-  private connections = new Map<string, DataConnection>();
-  private hostConn: DataConnection | null = null;
+  private socket: Socket | null = null;
 
   // ---- Observable state ----
   phase$ = new BehaviorSubject<GamePhase>('setup');
@@ -45,10 +53,12 @@ export class TriviaService {
   secondsLeft$ = new BehaviorSubject<number>(0);
   currentAnswers$ = new BehaviorSubject<{ [name: string]: string }>({});
   revealData$ = new BehaviorSubject<RevealData | null>(null);
+  roundWinner$ = new BehaviorSubject<RoundWinner | null>(null);
   rankings$ = new BehaviorSubject<TriviaPlayer[]>([]);
   errorMsg$ = new BehaviorSubject<string>('');
+  answeredCount$ = new BehaviorSubject<number>(0);
 
-  /** Raw host messages for player component */
+  /** Raw messages */
   message$ = new Subject<any>();
 
   isHost = false;
@@ -58,15 +68,41 @@ export class TriviaService {
   availableParticipants: { name: string; avatar: string }[] = [];
 
   private questions: TriviaQuestion[] = [];
-  private timerInterval: any = null;
   timeLimit = 20;
 
   constructor(private zone: NgZone) {}
 
+  private getServerUrl(): string {
+    const hostname = window.location.hostname || 'localhost';
+    return `http://${hostname}:3001`;
+  }
+
+  private initSocket(): Socket {
+    if (this.socket && this.socket.connected) {
+      return this.socket;
+    }
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+    const serverUrl = this.getServerUrl();
+    this.socket = io(serverUrl, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5
+    });
+
+    this.socket.on('connect_error', (err) => {
+      this.zone.run(() => {
+        this.errorMsg$.next('Error al conectar con el servidor: ' + err.message);
+      });
+    });
+
+    return this.socket;
+  }
+
   // ─────────────────────────────────────────────────────────────────
-  // QUESTIONS – loaded from local TypeScript data (no fetch/JSON needed)
+  // QUESTIONS & CATEGORIES
   // ─────────────────────────────────────────────────────────────────
-  loadQuestions(category: string, count: number): void {
+  loadQuestions(category: string, count: number): TriviaQuestion[] {
     let pool: TriviaQuestion[] = [];
 
     if (category === 'Mixto') {
@@ -79,6 +115,7 @@ export class TriviaService {
 
     this.questions = this.shuffle(pool).slice(0, Math.min(count, pool.length));
     this.totalQuestions$.next(this.questions.length);
+    return this.questions;
   }
 
   get categories(): string[] {
@@ -95,244 +132,231 @@ export class TriviaService {
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // HOST – create a PeerJS room
+  // HOST – create a Socket room
   // ─────────────────────────────────────────────────────────────────
-  createRoom(participants: { name: string; avatar: string }[]): Promise<string> {
+  createRoom(participants: { name: string; avatar: string }[], category: string = 'Mixto', count: number = 5): Promise<string> {
     this.availableParticipants = participants;
     this.isHost = true;
-    const id = this.generateRoomId();
-    this.roomId = id;
+    const socket = this.initSocket();
 
-    this.peer = new Peer(id);
+    const selectedQuestions = this.loadQuestions(category, count);
 
     return new Promise((resolve, reject) => {
-      this.peer!.on('open', () => {
+      socket.emit('host:create-room', {
+        category,
+        timeLimit: this.timeLimit,
+        questionCount: selectedQuestions.length,
+        questions: selectedQuestions,
+        participants
+      }, (res: any) => {
         this.zone.run(() => {
-          this.phase$.next('lobby');
-          resolve(id);
-        });
-      });
-
-      this.peer!.on('connection', (conn) => {
-        this.zone.run(() => this.onPlayerConnected(conn));
-      });
-
-      this.peer!.on('error', (err: any) => {
-        this.zone.run(() => {
-          this.errorMsg$.next('Error PeerJS: ' + err.message);
-          this.phase$.next('error');
-          reject(err);
+          if (res && res.success) {
+            this.roomId = res.roomId;
+            this.phase$.next('lobby');
+            this.setupHostListeners();
+            resolve(res.roomId);
+          } else {
+            this.errorMsg$.next(res?.error || 'No se pudo crear la sala');
+            this.phase$.next('error');
+            reject(new Error(res?.error || 'Error al crear sala'));
+          }
         });
       });
     });
   }
 
-  private onPlayerConnected(conn: DataConnection) {
-    conn.on('open', () => {
-      this.connections.set(conn.peer, conn);
-      conn.send({
-        type: 'room-info',
-        participants: this.availableParticipants,
-        players: this.players$.value
-      });
-    });
+  private setupHostListeners() {
+    if (!this.socket) return;
 
-    conn.on('data', (raw: any) => {
+    this.socket.on('room:players-update', (players: TriviaPlayer[]) => {
       this.zone.run(() => {
-        if (raw.type === 'join') {
-          this.handlePlayerJoin(conn.peer, raw.name, raw.avatar);
-        } else if (raw.type === 'answer') {
-          this.handlePlayerAnswer(conn.peer, raw.answerId);
-        }
+        this.players$.next(players);
       });
     });
 
-    conn.on('close', () => {
-      this.zone.run(() => this.connections.delete(conn.peer));
+    this.socket.on('room:player-answered', (data: { playerName: string; totalAnswered: number; totalPlayers: number }) => {
+      this.zone.run(() => {
+        this.answeredCount$.next(data.totalAnswered);
+        const cur = { ...this.currentAnswers$.value };
+        cur[data.playerName] = 'answered';
+        this.currentAnswers$.next(cur);
+      });
+    });
+
+    this.socket.on('room:question-started', (data: any) => {
+      this.zone.run(() => {
+        this.currentQuestion$.next(data);
+        this.questionIndex$.next(data.index);
+        this.totalQuestions$.next(data.total);
+        this.secondsLeft$.next(data.timeLimit);
+        this.currentAnswers$.next({});
+        this.revealData$.next(null);
+        this.roundWinner$.next(null);
+        this.answeredCount$.next(0);
+        this.phase$.next('question');
+      });
+    });
+
+    this.socket.on('room:timer', (data: { secondsLeft: number }) => {
+      this.zone.run(() => {
+        this.secondsLeft$.next(data.secondsLeft);
+      });
+    });
+
+    this.socket.on('room:round-ended', (data: any) => {
+      this.zone.run(() => {
+        this.revealData$.next({
+          correctId: data.correctId,
+          explanation: data.explanation,
+          answers: data.answers,
+          roundWinner: data.roundWinner
+        });
+        this.roundWinner$.next(data.roundWinner || null);
+        this.players$.next(data.players || []);
+        this.phase$.next('reveal');
+      });
+    });
+
+    this.socket.on('room:game-over', (data: { rankings: TriviaPlayer[] }) => {
+      this.zone.run(() => {
+        this.rankings$.next(data.rankings);
+        this.phase$.next('finished');
+      });
     });
   }
 
-  private handlePlayerJoin(peerId: string, name: string, avatar: string) {
-    const current = this.players$.value;
-    const exists = current.find(p => p.name === name);
-    const updated = exists
-      ? current.map(p => p.name === name ? { ...p, peerId } : p)
-      : [...current, { peerId, name, avatar, score: 0, correctCount: 0, wrongCount: 0, answers: [] }];
-    this.players$.next(updated);
-    this.broadcast({ type: 'lobby-update', players: updated });
-  }
-
-  private handlePlayerAnswer(peerId: string, answerId: string) {
-    const player = this.players$.value.find(p => p.peerId === peerId);
-    if (!player) return;
-    const cur = { ...this.currentAnswers$.value };
-    if (cur[player.name]) return;
-    cur[player.name] = answerId;
-    this.currentAnswers$.next(cur);
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // HOST – game flow
-  // ─────────────────────────────────────────────────────────────────
   startGame() {
-    this.phase$.next('question');
-    this.broadcast({ type: 'game-start' });
-    this.dispatchQuestion(0);
-  }
-
-  private dispatchQuestion(index: number) {
-    const q = this.questions[index];
-    this.currentQuestion$.next(q);
-    this.questionIndex$.next(index);
-    this.currentAnswers$.next({});
-    this.revealData$.next(null);
-    this.phase$.next('question');
-
-    this.broadcast({
-      type: 'question',
-      question: { id: q.id, text: q.text, options: q.options, category: q.category },
-      index,
-      total: this.questions.length,
-      timeLimit: this.timeLimit
-    });
-
-    this.startTimer(this.timeLimit, () => this.revealQuestion());
-  }
-
-  private startTimer(secs: number, onEnd: () => void) {
-    clearInterval(this.timerInterval);
-    this.secondsLeft$.next(secs);
-    this.timerInterval = setInterval(() => {
-      this.zone.run(() => {
-        const next = this.secondsLeft$.value - 1;
-        this.secondsLeft$.next(next);
-        this.broadcast({ type: 'timer', secondsLeft: next });
-        if (next <= 0) { clearInterval(this.timerInterval); onEnd(); }
-      });
-    }, 1000);
+    if (this.socket && this.roomId) {
+      this.socket.emit('host:start-game', { roomId: this.roomId });
+    }
   }
 
   revealQuestion() {
-    clearInterval(this.timerInterval);
-    const q = this.questions[this.questionIndex$.value];
-    const answers = this.currentAnswers$.value;
-
-    const updatedPlayers = this.players$.value.map(p => {
-      const ans = answers[p.name];
-      const correct = ans === q.correctId;
-      const timeBonus = correct ? Math.max(0, this.secondsLeft$.value * 5) : 0;
-      return {
-        ...p,
-        score: p.score + (correct ? 100 + timeBonus : 0),
-        correctCount: p.correctCount + (correct ? 1 : 0),
-        wrongCount: p.wrongCount + (!ans || !correct ? 1 : 0),
-        answers: [...p.answers, { questionIndex: this.questionIndex$.value, answerId: ans || '', correct }]
-      };
-    });
-
-    this.players$.next(updatedPlayers);
-    const reveal: RevealData = { correctId: q.correctId, explanation: q.explanation, answers };
-    this.revealData$.next(reveal);
-    this.phase$.next('reveal');
-    this.broadcast({ type: 'reveal', ...reveal, players: updatedPlayers });
+    if (this.socket && this.roomId) {
+      this.socket.emit('host:reveal', { roomId: this.roomId });
+    }
   }
 
   nextQuestion() {
-    const next = this.questionIndex$.value + 1;
-    if (next >= this.questions.length) this.endGame();
-    else this.dispatchQuestion(next);
-  }
-
-  private endGame() {
-    const ranked = [...this.players$.value].sort((a, b) => b.score - a.score);
-    this.rankings$.next(ranked);
-    this.phase$.next('finished');
-    this.broadcast({ type: 'game-over', rankings: ranked });
-  }
-
-  private broadcast(data: any) {
-    this.connections.forEach(conn => { if (conn.open) conn.send(data); });
+    if (this.socket && this.roomId) {
+      this.socket.emit('host:next-question', { roomId: this.roomId });
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // PLAYER – join a room
+  // PLAYER – join room
   // ─────────────────────────────────────────────────────────────────
   joinRoom(roomId: string): Promise<void> {
-    this.roomId = roomId;
+    this.roomId = roomId.trim().toUpperCase();
     this.isHost = false;
-    this.peer = new Peer();
+    const socket = this.initSocket();
 
     return new Promise((resolve, reject) => {
-      this.peer!.on('open', () => {
-        const conn = this.peer!.connect(roomId);
-        this.hostConn = conn;
-        conn.on('open', () => resolve());
-        conn.on('data', (data: any) => this.zone.run(() => this.handleHostMsg(data)));
-        conn.on('error', reject);
-      });
-      this.peer!.on('error', (err: any) => {
+      this.setupPlayerListeners();
+      socket.emit('room:get-info', { roomId: this.roomId }, (res: any) => {
         this.zone.run(() => {
-          this.errorMsg$.next('No se pudo conectar: ' + err.message);
-          this.phase$.next('error');
-          reject(err);
+          if (res && res.success) {
+            this.availableParticipants = res.participants || [];
+            this.players$.next(res.players || []);
+            this.phase$.next('lobby');
+            this.message$.next({ type: 'room-info', participants: res.participants });
+            resolve();
+          } else {
+            this.errorMsg$.next(res?.error || 'Sala no encontrada');
+            this.phase$.next('error');
+            reject(new Error(res?.error || 'Sala no encontrada'));
+          }
         });
       });
     });
   }
 
   sendJoin() {
-    this.hostConn?.send({ type: 'join', name: this.myName, avatar: this.myAvatar });
+    if (!this.socket || !this.roomId) return;
+    this.socket.emit('player:join', {
+      roomId: this.roomId,
+      name: this.myName,
+      avatar: this.myAvatar
+    }, (res: any) => {
+      this.zone.run(() => {
+        if (!res || !res.success) {
+          this.errorMsg$.next(res?.error || 'Error al unirse');
+          this.phase$.next('error');
+        } else {
+          this.phase$.next(res.currentPhase === 'question' ? 'question' : 'lobby');
+        }
+      });
+    });
   }
 
   submitAnswer(answerId: string) {
-    this.hostConn?.send({ type: 'answer', answerId, questionIndex: this.questionIndex$.value });
+    if (!this.socket || !this.roomId) return;
+    this.socket.emit('player:submit-answer', {
+      roomId: this.roomId,
+      answerId
+    });
   }
 
-  private handleHostMsg(data: any) {
-    this.message$.next(data);
-    switch (data.type) {
-      case 'room-info':
-        this.availableParticipants = data.participants;
-        this.players$.next(data.players);
-        break;
-      case 'lobby-update':
-        this.players$.next(data.players);
-        break;
-      case 'game-start':
-        this.phase$.next('question');
-        break;
-      case 'question':
-        this.currentQuestion$.next(data.question);
+  private setupPlayerListeners() {
+    if (!this.socket) return;
+
+    this.socket.on('room:players-update', (players: TriviaPlayer[]) => {
+      this.zone.run(() => {
+        this.players$.next(players);
+      });
+    });
+
+    this.socket.on('room:question-started', (data: any) => {
+      this.zone.run(() => {
+        this.currentQuestion$.next(data);
         this.questionIndex$.next(data.index);
         this.totalQuestions$.next(data.total);
         this.secondsLeft$.next(data.timeLimit);
         this.currentAnswers$.next({});
         this.revealData$.next(null);
+        this.roundWinner$.next(null);
         this.phase$.next('question');
-        break;
-      case 'timer':
+      });
+    });
+
+    this.socket.on('room:timer', (data: { secondsLeft: number }) => {
+      this.zone.run(() => {
         this.secondsLeft$.next(data.secondsLeft);
-        break;
-      case 'reveal':
-        this.revealData$.next({ correctId: data.correctId, explanation: data.explanation, answers: data.answers });
-        this.players$.next(data.players);
+      });
+    });
+
+    this.socket.on('room:round-ended', (data: any) => {
+      this.zone.run(() => {
+        this.revealData$.next({
+          correctId: data.correctId,
+          explanation: data.explanation,
+          answers: data.answers,
+          roundWinner: data.roundWinner
+        });
+        this.roundWinner$.next(data.roundWinner || null);
+        this.players$.next(data.players || []);
         this.phase$.next('reveal');
-        break;
-      case 'game-over':
+      });
+    });
+
+    this.socket.on('room:game-over', (data: { rankings: TriviaPlayer[] }) => {
+      this.zone.run(() => {
         this.rankings$.next(data.rankings);
         this.phase$.next('finished');
-        break;
-    }
+      });
+    });
+
+    this.socket.on('room:closed', (data: { message: string }) => {
+      this.zone.run(() => {
+        this.errorMsg$.next(data.message || 'La sala fue cerrada');
+        this.phase$.next('error');
+      });
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────
   // Utils
   // ─────────────────────────────────────────────────────────────────
-  private generateRoomId(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  }
-
   getLocalIP(): Promise<string> {
     return new Promise(resolve => {
       try {
@@ -350,11 +374,10 @@ export class TriviaService {
   }
 
   reset() {
-    clearInterval(this.timerInterval);
-    this.peer?.destroy();
-    this.peer = null;
-    this.connections.clear();
-    this.hostConn = null;
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
     this.questions = [];
     this.isHost = false;
     this.roomId = '';
@@ -365,7 +388,9 @@ export class TriviaService {
     this.currentQuestion$.next(null);
     this.currentAnswers$.next({});
     this.revealData$.next(null);
+    this.roundWinner$.next(null);
     this.rankings$.next([]);
     this.errorMsg$.next('');
+    this.answeredCount$.next(0);
   }
 }

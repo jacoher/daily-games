@@ -65,6 +65,23 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Get room info (participants, etc.)
+  socket.on('room:get-info', ({ roomId }, callback) => {
+    const normalizedRoomId = roomId?.trim().toUpperCase();
+    const room = rooms.get(normalizedRoomId);
+    if (!room) {
+      if (callback) callback({ success: false, error: 'Sala no encontrada' });
+      return;
+    }
+    if (callback) {
+      callback({
+        success: true,
+        participants: room.availableParticipants,
+        players: Array.from(room.players.values())
+      });
+    }
+  });
+
   // Player joins
   socket.on('player:join', ({ roomId, name, avatar }, callback) => {
     const normalizedRoomId = roomId?.trim().toUpperCase();
@@ -105,6 +122,13 @@ io.on('connection', (socket) => {
     dispatchQuestion(room, 0);
   });
 
+  // Host manual reveal
+  socket.on('host:reveal', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room || room.hostSocketId !== socket.id) return;
+    revealRound(room);
+  });
+
   // Host next question
   socket.on('host:next-question', ({ roomId }) => {
     const room = rooms.get(roomId);
@@ -137,8 +161,8 @@ io.on('connection', (socket) => {
       playerName: player.name
     });
 
-    // Notify host that player answered
-    io.to(room.hostSocketId).emit('room:player-answered', {
+    // Notify room that player answered
+    io.to(room.id).emit('room:player-answered', {
       playerName: player.name,
       totalAnswered: room.currentAnswers.size,
       totalPlayers: room.players.size
