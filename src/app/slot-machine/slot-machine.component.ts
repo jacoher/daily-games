@@ -6,6 +6,25 @@ import { ParticipantService } from '../participant.service';
 import { Participant } from '../participant.model';
 import { SoundService } from '../sound.service';
 
+export interface ReelItem {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  icon?: string;
+  type: 'participant' | 'casino';
+}
+
+const CASINO_SYMBOLS: ReelItem[] = [
+  { id: 'seven', name: '777 LUCKY', icon: '7️⃣', type: 'casino' },
+  { id: 'cherry', name: 'CHERRY', icon: '🍒', type: 'casino' },
+  { id: 'bell', name: 'GOLD BELL', icon: '🔔', type: 'casino' },
+  { id: 'diamond', name: 'DIAMOND', icon: '💎', type: 'casino' },
+  { id: 'bar', name: 'BAR GOLD', icon: '🪙', type: 'casino' },
+  { id: 'crown', name: 'ROYAL CROWN', icon: '👑', type: 'casino' },
+  { id: 'horseshoe', name: 'HORSESHOE', icon: '🧲', type: 'casino' },
+  { id: 'grapes', name: 'GRAPES', icon: '🍇', type: 'casino' }
+];
+
 @Component({
   selector: 'app-slot-machine',
   standalone: true,
@@ -20,7 +39,7 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
   // Slot reels state
   ITEM_HEIGHT = 120; // Matches CSS item height
   reelsCount = 3;
-  reelStrips: Participant[][] = [[], [], []];
+  reelStrips: ReelItem[][] = [[], [], []];
   reelOffsets = [80, 80, 80];
   reelTransitions = ['none', 'none', 'none'];
   isReelSpinning = [false, false, false];
@@ -64,18 +83,28 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Build strip with duplicated participants for smooth scroll & blur
-    const baseList = this.activeParticipants;
-    const repeatCount = Math.max(14, Math.ceil(40 / baseList.length));
+    // Convert participants to ReelItem format
+    const participantItems: ReelItem[] = this.activeParticipants.map(p => ({
+      id: 'p_' + p.name,
+      name: p.name,
+      avatarUrl: p.avatarUrl,
+      type: 'participant'
+    }));
+
+    // Build rich casino reel strip combining participants + classic slot icons
+    const combinedPool: ReelItem[] = [...CASINO_SYMBOLS, ...participantItems];
 
     for (let r = 0; r < 3; r++) {
-      const fullList: Participant[] = [];
+      const strip: ReelItem[] = [];
+      const repeatCount = Math.max(16, Math.ceil(50 / combinedPool.length));
+
       for (let i = 0; i < repeatCount; i++) {
-        fullList.push(...baseList);
+        // Shuffle pool on each cycle with different seeds per reel so all 3 look distinct
+        const shuffled = [...combinedPool].sort(() => Math.random() - 0.5);
+        strip.push(...shuffled);
       }
-      this.reelStrips[r] = fullList;
-      
-      // Center position offset: (viewport 280px - item 120px) / 2 = 80px
+
+      this.reelStrips[r] = strip;
       this.reelTransitions[r] = 'none';
       this.reelOffsets[r] = 80;
       this.isReelSpinning[r] = false;
@@ -167,7 +196,7 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
     if (!this.isDraggingLever) return;
     this.isDraggingLever = false;
 
-    // If dragged at least 50% or clicked, fire the spin; otherwise spring back
+    // If dragged at least 45%, fire the spin; otherwise spring back
     if (this.leverProgress >= 0.45) {
       this.fireLeverRelease();
     } else {
@@ -203,9 +232,17 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
     this.leverTransform = 'rotateX(0deg) scaleY(1) translateY(0px)';
     this.leverProgress = 0;
 
-    // Pick random winning participant from active participants
+    // 1. Pick the winning participant
     const winnerIdx = Math.floor(Math.random() * this.activeParticipants.length);
     this.selectedWinner = this.activeParticipants[winnerIdx];
+
+    // 2. Randomly choose WHICH of the 3 reels will display the winner (Reel 0, 1, or 2)
+    // The other two reels will land on iconic casino symbols (777, Diamond, Bell, Crown...)
+    // This makes every spin completely unpredictable and exciting!
+    const winnerReel = Math.floor(Math.random() * 3);
+
+    // Pick 2 distinct casino symbols for the other reels
+    const shuffledSymbols = [...CASINO_SYMBOLS].sort(() => Math.random() - 0.5);
 
     // Start spin loop audio
     this.soundService.startSlotSpinLoop();
@@ -216,44 +253,55 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
       this.reelTransitions[r] = 'none';
     }
 
-    // Cascading deceleration and landing
-    // Reel 1 stop: ~2.0s, Reel 2 stop: ~2.7s, Reel 3 stop: ~3.4s
+    // Cascading deceleration and landing: Reel 1 (~2.0s), Reel 2 (~2.7s), Reel 3 (~3.4s)
     const stopDelays = [2000, 2700, 3400];
 
     stopDelays.forEach((delay, r) => {
       setTimeout(() => {
-        // Prepare target item index on the strip
         const strip = this.reelStrips[r];
         let targetIndex = -1;
-        const minIndex = 12 + (r * 3);
+        const minIndex = 14 + (r * 4);
 
-        for (let i = minIndex; i < strip.length; i++) {
-          if (strip[i].name === this.selectedWinner!.name) {
-            targetIndex = i;
-            break;
+        if (r === winnerReel) {
+          // This reel lands on the WINNING participant!
+          for (let i = minIndex; i < strip.length; i++) {
+            if (strip[i].type === 'participant' && strip[i].name === this.selectedWinner!.name) {
+              targetIndex = i;
+              break;
+            }
+          }
+        } else {
+          // This reel lands on a shiny casino symbol
+          const symbolToLand = shuffledSymbols[r % shuffledSymbols.length];
+          for (let i = minIndex; i < strip.length; i++) {
+            if (strip[i].type === 'casino' && strip[i].id === symbolToLand.id) {
+              targetIndex = i;
+              break;
+            }
           }
         }
 
+        // Fallback safety
         if (targetIndex === -1) {
-          targetIndex = winnerIdx;
+          targetIndex = minIndex;
         }
 
         const targetOffset = 80 - (targetIndex * this.ITEM_HEIGHT);
 
-        // Turn off infinite rapid loop and engage smooth brake deceleration
+        // Disengage infinite spin loop and apply elastic stop
         this.isReelSpinning[r] = false;
         this.reelTransitions[r] = 'transform 0.65s cubic-bezier(0.15, 0.9, 0.25, 1.08)';
         this.reelOffsets[r] = targetOffset;
 
-        // Play reel mechanical lock clack
+        // Play mechanical reel stop clack
         this.soundService.playSlotReelStop();
 
-        // When the 3rd and final reel locks in:
+        // When the final 3rd reel lands:
         if (r === 2) {
           this.soundService.stopSlotSpinLoop();
           setTimeout(() => {
             this.handleWinnerReveal();
-          }, 350);
+          }, 400);
         }
       }, delay);
     });

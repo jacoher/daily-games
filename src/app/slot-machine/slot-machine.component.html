@@ -57,14 +57,21 @@
             >
               @for (item of reelStrips[0]; track $index) {
                 <div class="strip-item">
-                  <div class="avatar-disc">
-                    <img
-                      [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
-                      [alt]="item.name"
-                      class="avatar-img"
-                    />
-                  </div>
-                  <span class="participant-name">{{ item.name }}</span>
+                  @if (item.type === 'participant') {
+                    <div class="avatar-disc">
+                      <img
+                        [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
+                        [alt]="item.name"
+                        class="avatar-img"
+                      />
+                    </div>
+                    <span class="participant-name">{{ item.name }}</span>
+                  } @else {
+                    <div class="casino-symbol-disc">
+                      <span class="casino-symbol-icon">{{ item.icon }}</span>
+                    </div>
+                    <span class="participant-name text-amber-400 font-black">{{ item.name }}</span>
+                  }
                 </div>
               }
             </div>
@@ -80,14 +87,21 @@
             >
               @for (item of reelStrips[1]; track $index) {
                 <div class="strip-item">
-                  <div class="avatar-disc">
-                    <img
-                      [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
-                      [alt]="item.name"
-                      class="avatar-img"
-                    />
-                  </div>
-                  <span class="participant-name">{{ item.name }}</span>
+                  @if (item.type === 'participant') {
+                    <div class="avatar-disc">
+                      <img
+                        [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
+                        [alt]="item.name"
+                        class="avatar-img"
+                      />
+                    </div>
+                    <span class="participant-name">{{ item.name }}</span>
+                  } @else {
+                    <div class="casino-symbol-disc">
+                      <span class="casino-symbol-icon">{{ item.icon }}</span>
+                    </div>
+                    <span class="participant-name text-amber-400 font-black">{{ item.name }}</span>
+                  }
                 </div>
               }
             </div>
@@ -103,14 +117,21 @@
             >
               @for (item of reelStrips[2]; track $index) {
                 <div class="strip-item">
-                  <div class="avatar-disc">
-                    <img
-                      [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
-                      [alt]="item.name"
-                      class="avatar-img"
-                    />
-                  </div>
-                  <span class="participant-name">{{ item.name }}</span>
+                  @if (item.type === 'participant') {
+                    <div class="avatar-disc">
+                      <img
+                        [src]="item.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + item.name"
+                        [alt]="item.name"
+                        class="avatar-img"
+                      />
+                    </div>
+                    <span class="participant-name">{{ item.name }}</span>
+                  } @else {
+                    <div class="casino-symbol-disc">
+                      <span class="casino-symbol-icon">{{ item.icon }}</span>
+                    </div>
+                    <span class="participant-name text-amber-400 font-black">{{ item.name }}</span>
+                  }
                 </div>
               }
             </div>
