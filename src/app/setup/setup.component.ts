@@ -85,6 +85,14 @@ import { ParticipantService } from '../participant.service';
              </div>
            </button>
 
+           <button class="game-card slot-card" (click)="goToSlots()" [class.disabled-card]="participantService.participants.length === 0">
+             <div class="card-icon">🎰</div>
+             <div class="card-content">
+               <h3>Casino Slots</h3>
+               <p>Palanca mecánica y jackpot</p>
+             </div>
+           </button>
+
            <button class="game-card trivia-card" (click)="goToTrivia()" [class.disabled-card]="participantService.participants.length === 0">
              <div class="card-icon">🧠</div>
              <div class="card-content">
@@ -180,6 +188,7 @@ import { ParticipantService } from '../participant.service';
 
     .roulette-card { background: linear-gradient(135deg, #3b82f6, #8b5cf6); box-shadow: 0 8px 25px rgba(59,130,246,0.3); }
     .marble-card { background: linear-gradient(135deg, #f43f5e, #f97316); box-shadow: 0 8px 25px rgba(244,63,94,0.3); }
+    .slot-card { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 25px rgba(245,158,11,0.35); }
     .trivia-card { background: linear-gradient(135deg, #06b6d4, #a855f7); box-shadow: 0 8px 25px rgba(6,182,212,0.3); }
 
     .card-icon { font-size: 3rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
@@ -235,6 +244,12 @@ export class SetupComponent implements OnInit {
   goToMarbles() {
     if (this.participantService.participants.length > 0) {
       this.router.navigate(['/marbles']);
+    }
+  }
+
+  goToSlots() {
+    if (this.participantService.participants.length > 0) {
+      this.router.navigate(['/slots']);
     }
   }
 
