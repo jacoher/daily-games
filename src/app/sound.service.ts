@@ -364,6 +364,25 @@ export class SoundService {
     }, 60);
   }
 
+  playLeverRatchetClick() {
+    this.initAudio();
+    if (!this.audioCtx) return;
+    const ctx = this.audioCtx;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(480 + Math.random() * 80, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.025);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.03);
+  }
+
   startSlotSpinLoop() {
     this.initAudio();
     this.isSlotSpinning = true;

@@ -27,12 +27,16 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
 
   // Game flow state
   isSpinning = false;
-  isLeverPulled = false;
   winnerModalOpen = false;
   selectedWinner: Participant | null = null;
 
-  private isDraggingLever = false;
+  // Mechanical lever physics state
+  isDraggingLever = false;
+  leverProgress = 0; // 0 = idle upright, 1 = fully pulled down
+  leverTransform = 'rotateX(0deg) scaleY(1) translateY(0px)';
+  leverTransition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
   private dragStartY = 0;
+  private lastRatchetStep = 0;
 
   constructor(
     public participantService: ParticipantService,
@@ -88,47 +92,116 @@ export class SlotMachineComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Drag-to-pull lever interactions
+  // Realistic lever physics & drag tracking
   onLeverMouseDown(event: MouseEvent): void {
     if (this.isSpinning || this.activeParticipants.length < 2) return;
-    this.isDraggingLever = true;
-    this.dragStartY = event.clientY;
+    event.preventDefault();
+    this.startLeverDrag(event.clientY);
 
     const onMouseMove = (moveEvent: MouseEvent) => {
-      if (!this.isDraggingLever) return;
-      const deltaY = moveEvent.clientY - this.dragStartY;
-      if (deltaY > 50) {
-        this.isDraggingLever = false;
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        this.pullLever();
-      }
+      this.updateLeverDrag(moveEvent.clientY);
     };
 
     const onMouseUp = () => {
-      this.isDraggingLever = false;
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      this.endLeverDrag();
     };
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   }
 
-  // Trigger Lever and start casino spin sequence
+  onLeverTouchStart(event: TouchEvent): void {
+    if (this.isSpinning || this.activeParticipants.length < 2) return;
+    if (event.touches.length === 0) return;
+    this.startLeverDrag(event.touches[0].clientY);
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      if (moveEvent.touches.length > 0) {
+        this.updateLeverDrag(moveEvent.touches[0].clientY);
+      }
+    };
+
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      this.endLeverDrag();
+    };
+
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+  }
+
+  private startLeverDrag(startY: number): void {
+    this.isDraggingLever = true;
+    this.dragStartY = startY;
+    this.leverTransition = 'none'; // Instant follow during drag
+    this.lastRatchetStep = 0;
+  }
+
+  private updateLeverDrag(currentY: number): void {
+    if (!this.isDraggingLever) return;
+    const deltaY = currentY - this.dragStartY;
+    
+    // Drag distance: 130px for full pull
+    const MAX_DRAG = 130;
+    this.leverProgress = Math.max(0, Math.min(1, deltaY / MAX_DRAG));
+
+    // Ratchet sound ticks as the user pulls down through mechanical notches
+    const currentStep = Math.floor(this.leverProgress * 6);
+    if (currentStep > this.lastRatchetStep) {
+      this.soundService.playLeverRatchetClick();
+      this.lastRatchetStep = currentStep;
+    }
+
+    // Dynamic 3D rotation and foreshortening
+    const rotDeg = this.leverProgress * 68; // 0deg -> 68deg
+    const scaleY = 1 - (this.leverProgress * 0.38); // 1 -> 0.62
+    const transY = this.leverProgress * 48; // 0px -> 48px
+
+    this.leverTransform = `rotateX(${rotDeg}deg) scaleY(${scaleY}) translateY(${transY}px)`;
+  }
+
+  private endLeverDrag(): void {
+    if (!this.isDraggingLever) return;
+    this.isDraggingLever = false;
+
+    // If dragged at least 50% or clicked, fire the spin; otherwise spring back
+    if (this.leverProgress >= 0.45) {
+      this.fireLeverRelease();
+    } else {
+      // Spring back to upright resting position
+      this.leverTransition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      this.leverTransform = 'rotateX(0deg) scaleY(1) translateY(0px)';
+      this.leverProgress = 0;
+    }
+  }
+
+  // Trigger Lever (either via button click, keyboard or quick tap)
   pullLever(): void {
     if (this.isSpinning || this.activeParticipants.length < 2) return;
+    
+    // Quick physical pull-down animation
+    this.leverTransition = 'transform 0.16s cubic-bezier(0.4, 0, 0.2, 1)';
+    this.leverTransform = 'rotateX(68deg) scaleY(0.62) translateY(48px)';
+    this.soundService.playLeverRatchetClick();
 
+    setTimeout(() => {
+      this.fireLeverRelease();
+    }, 170);
+  }
+
+  private fireLeverRelease(): void {
     this.isSpinning = true;
-    this.isLeverPulled = true;
 
-    // Sound: mechanical lever pull
+    // Heavy mechanical trip latch sound
     this.soundService.playSlotLeverPull();
 
-    // Lever release spring back animation
-    setTimeout(() => {
-      this.isLeverPulled = false;
-    }, 280);
+    // Elastic spring release back to top with mechanical bounce
+    this.leverTransition = 'transform 0.4s cubic-bezier(0.18, 0.9, 0.32, 1.35)';
+    this.leverTransform = 'rotateX(0deg) scaleY(1) translateY(0px)';
+    this.leverProgress = 0;
 
     // Pick random winning participant from active participants
     const winnerIdx = Math.floor(Math.random() * this.activeParticipants.length);

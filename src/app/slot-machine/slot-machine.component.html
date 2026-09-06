@@ -143,16 +143,21 @@
 
     </div>
 
-    <!-- Mechanical Side Lever (Interactive Click & Drag) -->
+    <!-- Realistic Mechanical Side Lever (Drag / Pull physics) -->
     <div
       class="lever-assembly"
-      (click)="pullLever()"
+      [class.dragging]="isDraggingLever"
       (mousedown)="onLeverMouseDown($event)"
-      title="¡Tira de la palanca hacia abajo!"
+      (touchstart)="onLeverTouchStart($event)"
+      title="¡Haz clic o arrastra la palanca hacia abajo!"
     >
       <div class="lever-socket"></div>
       <div class="lever-hinge"></div>
-      <div class="lever-rod" [class.pulled]="isLeverPulled">
+      <div
+        class="lever-rod"
+        [style.transform]="leverTransform"
+        [style.transition]="leverTransition"
+      >
         <div class="lever-ball"></div>
       </div>
     </div>

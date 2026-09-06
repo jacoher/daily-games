@@ -427,87 +427,96 @@
 }
 
 /* =========================================================
-   Interactive Mechanical Slot Lever (Arm)
+   Interactive Mechanical Realistic Lever (Arm & Drag Physics)
    ========================================================= */
 .lever-assembly {
   position: relative;
-  width: 75px;
-  height: 300px;
+  width: 80px;
+  height: 320px;
   margin-left: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  perspective: 700px;
+  perspective: 800px;
   cursor: grab;
+  user-select: none;
+  touch-action: none;
 }
 
-.lever-assembly:active {
+.lever-assembly.dragging {
   cursor: grabbing;
 }
 
+/* Socket attached to chassis */
 .lever-socket {
   position: absolute;
-  bottom: 50px;
-  width: 50px;
-  height: 70px;
-  background: linear-gradient(135deg, #3f3f46 0%, #18181b 100%);
+  bottom: 45px;
+  width: 52px;
+  height: 75px;
+  background: linear-gradient(135deg, #52525b 0%, #27272a 40%, #09090b 100%);
   border: 2px solid #71717a;
-  border-radius: 8px 20px 20px 8px;
-  box-shadow: 6px 8px 20px rgba(0, 0, 0, 0.8),
-              inset 2px 2px 4px rgba(255, 255, 255, 0.2);
+  border-radius: 8px 24px 24px 8px;
+  box-shadow: 8px 10px 24px rgba(0, 0, 0, 0.85),
+              inset 2px 2px 5px rgba(255, 255, 255, 0.3),
+              inset -2px -2px 5px rgba(0, 0, 0, 0.8);
   z-index: 10;
 }
 
+/* Axis circular gear hinge */
 .lever-hinge {
   position: absolute;
-  bottom: 74px;
-  left: 17px;
-  width: 26px;
-  height: 26px;
+  bottom: 72px;
+  left: 18px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #e4e4e7, #52525b, #18181b);
-  border: 2px solid #a1a1aa;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #a1a1aa 40%, #27272a 100%);
+  border: 2px solid #d4d4d8;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.9), inset 1px 1px 2px rgba(255, 255, 255, 0.6);
   z-index: 15;
 }
 
+/* Chrome Steel Lever Stem */
 .lever-rod {
   position: absolute;
-  bottom: 86px;
-  left: 25px;
-  width: 10px;
-  height: 160px;
-  background: linear-gradient(90deg, #a1a1aa 0%, #ffffff 40%, #d4d4d8 70%, #3f3f46 100%);
-  border-radius: 5px;
+  bottom: 84px;
+  left: 26px;
+  width: 12px;
+  height: 165px;
+  background: linear-gradient(90deg, 
+              #71717a 0%, 
+              #e4e4e7 25%, 
+              #ffffff 45%, 
+              #d4d4d8 75%, 
+              #3f3f46 100%);
+  border-radius: 6px;
   transform-origin: bottom center;
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 3px 6px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.6), inset 1px 0 2px rgba(255, 255, 255, 0.8);
   z-index: 12;
+  will-change: transform;
 }
 
-.lever-rod.pulled {
-  transform: rotateX(65deg) scaleY(0.65) translateY(45px);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
+/* Red Resin Arcade Ball */
 .lever-ball {
   position: absolute;
-  top: -26px;
+  top: -28px;
   left: 50%;
   transform: translateX(-50%);
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #f87171 0%, #dc2626 50%, #7f1d1d 100%);
-  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.7),
-              inset 2px 2px 6px rgba(255, 255, 255, 0.5);
+  background: radial-gradient(circle at 32% 28%, #f87171 0%, #ef4444 30%, #b91c1c 70%, #450a0a 100%);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.7),
+              0 3px 6px rgba(0, 0, 0, 0.9),
+              inset 3px 3px 6px rgba(255, 255, 255, 0.6),
+              inset -2px -2px 4px rgba(0, 0, 0, 0.6);
   border: 1px solid #fecaca;
-  transition: transform 0.2s;
+  transition: filter 0.15s, transform 0.15s;
 }
 
 .lever-assembly:hover .lever-ball {
-  transform: translateX(-50%) scale(1.08);
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.95);
+  transform: translateX(-50%) scale(1.06);
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.8));
 }
 
 /* Footer shortcut note */
