@@ -317,4 +317,167 @@ export class SoundService {
 
     tickLoop();
   }
+
+  // -------------------------------------------------------
+  // Casino Slot Machine Sounds
+  // -------------------------------------------------------
+  private slotSpinLoopTimer: any = null;
+  private isSlotSpinning = false;
+
+  playSlotLeverPull() {
+    this.initAudio();
+    if (!this.audioCtx) return;
+    const ctx = this.audioCtx;
+
+    // 1. Heavy mechanical clank (snap / gear latch)
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+
+    // 2. Spring release metallic resonance
+    setTimeout(() => {
+      if (!this.audioCtx) return;
+      const t = this.audioCtx.currentTime;
+      const springOsc = this.audioCtx.createOscillator();
+      const springGain = this.audioCtx.createGain();
+      springOsc.type = 'triangle';
+      springOsc.frequency.setValueAtTime(320, t);
+      springOsc.frequency.linearRampToValueAtTime(180, t + 0.2);
+
+      springGain.gain.setValueAtTime(0.25, t);
+      springGain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+      springOsc.connect(springGain);
+      springGain.connect(this.audioCtx.destination);
+      springOsc.start(t);
+      springOsc.stop(t + 0.23);
+    }, 60);
+  }
+
+  startSlotSpinLoop() {
+    this.initAudio();
+    this.isSlotSpinning = true;
+    if (this.slotSpinLoopTimer) {
+      clearInterval(this.slotSpinLoopTimer);
+    }
+
+    // Continuous mechanical click / ratchet sound during spin
+    this.slotSpinLoopTimer = setInterval(() => {
+      if (!this.isSlotSpinning || !this.audioCtx) return;
+      const ctx = this.audioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(750 + Math.random() * 100, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.035);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.04);
+    }, 65);
+  }
+
+  stopSlotSpinLoop() {
+    this.isSlotSpinning = false;
+    if (this.slotSpinLoopTimer) {
+      clearInterval(this.slotSpinLoopTimer);
+      this.slotSpinLoopTimer = null;
+    }
+  }
+
+  playSlotReelStop() {
+    this.initAudio();
+    if (!this.audioCtx) return;
+    const ctx = this.audioCtx;
+
+    // Solid mechanical brake thud & metallic lock
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.16);
+
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+
+    // High accent metallic ping
+    const ping = ctx.createOscillator();
+    const pingGain = ctx.createGain();
+    ping.type = 'sine';
+    ping.frequency.setValueAtTime(1400, ctx.currentTime);
+    pingGain.gain.setValueAtTime(0.15, ctx.currentTime);
+    pingGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+
+    ping.connect(pingGain);
+    pingGain.connect(ctx.destination);
+    ping.start(ctx.currentTime);
+    ping.stop(ctx.currentTime + 0.09);
+  }
+
+  playCasinoJackpot() {
+    this.initAudio();
+    if (!this.audioCtx) return;
+    const ctx = this.audioCtx;
+
+    // 1. Triumphant arpeggio
+    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; // C5, E5, G5, C6, E6, G6
+    notes.forEach((freq, index) => {
+      setTimeout(() => {
+        if (!this.audioCtx) return;
+        const o = this.audioCtx.createOscillator();
+        const g = this.audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+        g.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.4);
+
+        o.connect(g);
+        g.connect(this.audioCtx.destination);
+        o.start(this.audioCtx.currentTime);
+        o.stop(this.audioCtx.currentTime + 0.42);
+      }, index * 110);
+    });
+
+    // 2. Cascading coins effect
+    const coinDelayStart = notes.length * 110;
+    for (let i = 0; i < 18; i++) {
+      setTimeout(() => {
+        if (!this.audioCtx) return;
+        const o = this.audioCtx.createOscillator();
+        const g = this.audioCtx.createGain();
+        o.type = 'sine';
+        // Random bright frequencies for bouncing coins
+        o.frequency.setValueAtTime(1800 + Math.random() * 800, this.audioCtx.currentTime);
+
+        g.gain.setValueAtTime(0.18, this.audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.08);
+
+        o.connect(g);
+        g.connect(this.audioCtx.destination);
+        o.start(this.audioCtx.currentTime);
+        o.stop(this.audioCtx.currentTime + 0.09);
+      }, coinDelayStart + i * 65);
+    }
+  }
 }
+
