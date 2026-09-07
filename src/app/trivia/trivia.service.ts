@@ -73,8 +73,25 @@ export class TriviaService {
   constructor(private zone: NgZone) {}
 
   private getServerUrl(): string {
+    // 1. Allow explicit custom override from localStorage if set
+    const customUrl = localStorage.getItem('trivia_server_url');
+    if (customUrl) return customUrl.trim().replace(/\/$/, '');
+
     const hostname = window.location.hostname || 'localhost';
-    return `http://${hostname}:3001`;
+
+    // 2. Localhost or private LAN IP uses port 3001
+    const isLocal = hostname === 'localhost' ||
+                    hostname === '127.0.0.1' ||
+                    hostname.startsWith('192.168.') ||
+                    hostname.startsWith('10.') ||
+                    hostname.endsWith('.local');
+
+    if (isLocal) {
+      return `http://${hostname}:3001`;
+    }
+
+    // 3. Deployed in GitHub Pages / production - connect to Render backend
+    return 'https://ruleta-trivia-backend.onrender.com';
   }
 
   private initSocket(): Socket {
