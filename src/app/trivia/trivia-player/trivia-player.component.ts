@@ -120,12 +120,13 @@ import { TriviaService, GamePhase, TriviaPlayer, TriviaQuestion, RevealData } fr
   <div class="reveal-screen" *ngIf="phase === 'reveal' && currentQ && !connecting">
     <div class="reveal-result" [class.correct-result]="isCorrect" [class.wrong-result]="!isCorrect && !!myAnswer" [class.timeout-result]="!myAnswer">
       <div class="result-emoji">
-        {{ isCorrect ? '🎉' : myAnswer ? '😢' : '⏰' }}
+        {{ isFastestWinner ? '⚡' : isCorrect ? '🎉' : myAnswer ? '😢' : '⏰' }}
       </div>
       <h2 class="result-text">
-        {{ isCorrect ? '¡Correcto!' : myAnswer ? '¡Incorrecto!' : '¡Sin respuesta!' }}
+        {{ isFastestWinner ? '¡Fuiste el más rápido!' : isCorrect ? '¡Correcto!' : myAnswer ? '¡Incorrecto!' : '¡Sin respuesta!' }}
       </h2>
-      <p class="pts-earned" *ngIf="isCorrect">+{{ pointsEarned }} puntos</p>
+      <p class="pts-earned" *ngIf="isFastestWinner">🏆 ¡Ganaste la ronda! (+{{ roundWinner?.pointsGained }} pts)</p>
+      <p class="pts-earned" *ngIf="isCorrect && !isFastestWinner">+50 puntos (¡{{ roundWinner?.name }} fue más rápido!)</p>
     </div>
 
     <div class="correct-answer-box">
@@ -477,6 +478,7 @@ export class TriviaPlayerComponent implements OnInit, OnDestroy {
   totalQ = 0;
   secondsLeft = 0;
   revealData: RevealData | null = null;
+  roundWinner: any = null;
   rankings: TriviaPlayer[] = [];
   sortedPlayers: TriviaPlayer[] = [];
 
@@ -490,9 +492,14 @@ export class TriviaPlayerComponent implements OnInit, OnDestroy {
 
   get isCorrect() { return !!this.myAnswer && this.myAnswer === this.revealData?.correctId; }
 
+  get isFastestWinner() {
+    return this.isCorrect && this.roundWinner?.name === this.myName;
+  }
+
   get pointsEarned() {
     if (!this.isCorrect) return 0;
-    return 100 + Math.max(0, this.secondsLeft * 5);
+    if (this.isFastestWinner) return this.roundWinner?.pointsGained || 100;
+    return 50;
   }
 
   get myScore() {
@@ -528,13 +535,6 @@ export class TriviaPlayerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    try {
-      await this.triviaService.joinRoom(this.roomId);
-      this.connecting = false;
-    } catch {
-      this.connecting = false;
-    }
-
     this.subs.push(
       this.triviaService.phase$.subscribe(p => {
         this.phase = p;
@@ -552,16 +552,27 @@ export class TriviaPlayerComponent implements OnInit, OnDestroy {
       this.triviaService.totalQuestions$.subscribe(t => { this.totalQ = t; this.cdr.markForCheck(); }),
       this.triviaService.secondsLeft$.subscribe(s => { this.secondsLeft = s; this.cdr.markForCheck(); }),
       this.triviaService.revealData$.subscribe(r => { this.revealData = r; this.cdr.markForCheck(); }),
+      this.triviaService.roundWinner$.subscribe(w => { this.roundWinner = w; this.cdr.markForCheck(); }),
       this.triviaService.rankings$.subscribe(r => { this.rankings = r; this.cdr.markForCheck(); }),
 
       // Get participants list from room-info message
       this.triviaService.message$.subscribe(msg => {
-        if (msg.type === 'room-info') {
+        if (msg.type === 'room-info' && msg.participants) {
           this.availableParticipants = msg.participants;
           this.cdr.markForCheck();
         }
       })
     );
+
+    try {
+      await this.triviaService.joinRoom(this.roomId);
+      this.availableParticipants = this.triviaService.availableParticipants || [];
+      this.connecting = false;
+      this.cdr.markForCheck();
+    } catch {
+      this.connecting = false;
+      this.cdr.markForCheck();
+    }
   }
 
   ngOnDestroy() {

@@ -100,16 +100,26 @@ import { ParticipantService } from '../../participant.service';
     </div>
 
     <div class="lobby-right">
-      <h3 class="players-title">👥 Jugadores ({{ players.length }})</h3>
+      <h3 class="players-title">👥 Jugadores Conectados ({{ players.length }})</h3>
       <div class="players-scroll">
         <div class="player-card" *ngFor="let p of players">
           <img [src]="p.avatar" class="p-avatar" (error)="onImgErr($event, p.name)" />
           <span class="p-name">{{ p.name }}</span>
-          <span class="p-badge">✓</span>
+          <span class="p-badge" title="Conectado">✓ Listo</span>
         </div>
         <div class="empty-players" *ngIf="players.length === 0">
           <div class="scan-anim">📱</div>
           Escanea el QR para unirte
+        </div>
+      </div>
+
+      <div class="initial-participants-section" *ngIf="pendingParticipants.length > 0">
+        <h4 class="pending-title">⏳ Pendientes por unirse ({{ pendingParticipants.length }})</h4>
+        <div class="pending-chips">
+          <span class="pending-chip" *ngFor="let p of pendingParticipants">
+            <img [src]="p.avatarUrl" class="chip-avatar" (error)="onImgErr($event, p.name)" />
+            {{ p.name }}
+          </span>
         </div>
       </div>
     </div>
@@ -174,6 +184,22 @@ import { ParticipantService } from '../../participant.service';
         <span class="opt-text">{{ opt.text }}</span>
         <span class="correct-check" *ngIf="opt.id === revealData?.correctId">✓</span>
       </div>
+    </div>
+
+    <!-- ⚡ Fastest Winner Banner -->
+    <div class="winner-highlight animate-in" *ngIf="roundWinner">
+      <span class="winner-trophy">⚡</span>
+      <img [src]="roundWinner.avatar" class="winner-av" (error)="onImgErr($event, roundWinner.name)" />
+      <div class="winner-info">
+        <span class="winner-title">¡El más rápido!</span>
+        <span class="winner-name">{{ roundWinner.name }} respondió en <strong>{{ roundWinner.seconds }}s</strong></span>
+      </div>
+      <span class="winner-pts">+{{ roundWinner.pointsGained }} pts</span>
+    </div>
+
+    <div class="no-winner-highlight animate-in" *ngIf="!roundWinner">
+      <span class="no-winner-icon">⏱️</span>
+      <span>Nadie respondió correctamente a tiempo</span>
     </div>
 
     <p class="explanation" *ngIf="currentQ.explanation">💡 {{ currentQ.explanation }}</p>
@@ -359,6 +385,41 @@ import { ParticipantService } from '../../participant.service';
     .empty-players { color: rgba(255,255,255,0.4); text-align: center; padding: 2.5rem; font-style: italic; }
     .scan-anim { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; animation: bounce 1s ease infinite; }
 
+    .initial-participants-section {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .pending-title {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.5);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .pending-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .pending-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.7);
+    }
+    .chip-avatar {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+    }
+
     /* QUESTION */
     .question-layout { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; }
     .q-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
@@ -438,6 +499,28 @@ import { ParticipantService } from '../../participant.service';
     /* REVEAL */
     .reveal-layout { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
     .reveal-title { font-size: 1.8rem; font-weight: 800; color: #22c55e; }
+
+    .winner-highlight {
+      display: flex; align-items: center; gap: 1.25rem;
+      background: linear-gradient(135deg, rgba(234,179,8,0.2), rgba(168,85,247,0.25));
+      border: 2px solid #fbbf24; border-radius: 20px;
+      padding: 1rem 1.75rem; width: 100%; max-width: 700px;
+      box-shadow: 0 0 30px rgba(251,191,36,0.3);
+    }
+    .winner-trophy { font-size: 2.2rem; filter: drop-shadow(0 0 8px rgba(251,191,36,0.6)); }
+    .winner-av { width: 52px; height: 52px; border-radius: 50%; border: 3px solid #fbbf24; }
+    .winner-info { display: flex; flex-direction: column; flex: 1; }
+    .winner-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #fbbf24; font-weight: 800; }
+    .winner-name { font-size: 1.2rem; font-weight: 700; color: #fff; }
+    .winner-pts { font-size: 1.4rem; font-weight: 900; color: #fbbf24; }
+
+    .no-winner-highlight {
+      display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+      background: rgba(255,255,255,0.06); border: 1px dashed rgba(255,255,255,0.2);
+      border-radius: 16px; padding: 0.9rem 1.5rem; width: 100%; max-width: 700px;
+      font-size: 1rem; color: rgba(255,255,255,0.7);
+    }
+    .no-winner-icon { font-size: 1.4rem; }
     .explanation {
       background: rgba(6,182,212,0.08); border-left: 3px solid #06b6d4;
       padding: 0.9rem 1.2rem; border-radius: 8px; font-size: 0.95rem;
@@ -514,6 +597,7 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   totalQ = 0;
   secondsLeft = 0;
   revealData: RevealData | null = null;
+  roundWinner: any = null;
   rankings: TriviaPlayer[] = [];
   currentAnswers: { [name: string]: string } = {};
 
@@ -529,7 +613,11 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   copied = false;
 
   get participantCount() { return this.participantService.participants.length; }
-  get answeredCount() { return Object.keys(this.currentAnswers).length; }
+  get pendingParticipants() {
+    const connectedNames = new Set(this.players.map(p => p.name));
+    return this.participantService.participants.filter(p => !connectedNames.has(p.name));
+  }
+  get answeredCount() { return this.triviaService.answeredCount$.value; }
   get answerPercent() { return this.players.length > 0 ? (this.answeredCount / this.players.length) * 100 : 0; }
   get ringOffset() { return 283 - (283 * this.secondsLeft / (this.triviaService.timeLimit || 20)); }
 
@@ -543,6 +631,7 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.participantService.loadParticipants();
     this.subs.push(
       this.triviaService.phase$.subscribe(p => { this.phase = p; this.cdr.markForCheck(); }),
       this.triviaService.players$.subscribe(p => { this.players = p; this.cdr.markForCheck(); }),
@@ -552,6 +641,7 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
       this.triviaService.secondsLeft$.subscribe(s => { this.secondsLeft = s; this.cdr.markForCheck(); }),
       this.triviaService.currentAnswers$.subscribe(a => { this.currentAnswers = a; this.cdr.markForCheck(); }),
       this.triviaService.revealData$.subscribe(r => { this.revealData = r; this.cdr.markForCheck(); }),
+      this.triviaService.roundWinner$.subscribe(w => { this.roundWinner = w; this.cdr.markForCheck(); }),
       this.triviaService.rankings$.subscribe(r => { this.rankings = r; this.cdr.markForCheck(); })
     );
   }
@@ -559,15 +649,14 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   ngOnDestroy() { this.subs.forEach(s => s.unsubscribe()); }
 
   async setupGame() {
+    this.participantService.loadParticipants();
     this.triviaService.timeLimit = Number(this.timeLimit);
 
     const participants = this.participantService.participants.map(p => ({
       name: p.name, avatar: p.avatarUrl
     }));
 
-    // Load questions first, then create room
-    this.triviaService.loadQuestions(this.selectedCategory, this.questionCount);
-    const roomId = await this.triviaService.createRoom(participants);
+    const roomId = await this.triviaService.createRoom(participants, this.selectedCategory, Number(this.questionCount));
     
     // Detect and save local IP
     const ip = await this.triviaService.getLocalIP();
