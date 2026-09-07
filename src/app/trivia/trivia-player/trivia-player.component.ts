@@ -535,13 +535,6 @@ export class TriviaPlayerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    try {
-      await this.triviaService.joinRoom(this.roomId);
-      this.connecting = false;
-    } catch {
-      this.connecting = false;
-    }
-
     this.subs.push(
       this.triviaService.phase$.subscribe(p => {
         this.phase = p;
@@ -564,12 +557,22 @@ export class TriviaPlayerComponent implements OnInit, OnDestroy {
 
       // Get participants list from room-info message
       this.triviaService.message$.subscribe(msg => {
-        if (msg.type === 'room-info') {
+        if (msg.type === 'room-info' && msg.participants) {
           this.availableParticipants = msg.participants;
           this.cdr.markForCheck();
         }
       })
     );
+
+    try {
+      await this.triviaService.joinRoom(this.roomId);
+      this.availableParticipants = this.triviaService.availableParticipants || [];
+      this.connecting = false;
+      this.cdr.markForCheck();
+    } catch {
+      this.connecting = false;
+      this.cdr.markForCheck();
+    }
   }
 
   ngOnDestroy() {
