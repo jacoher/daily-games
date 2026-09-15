@@ -120,15 +120,7 @@ export class TriviaService {
   // QUESTIONS & CATEGORIES
   // ─────────────────────────────────────────────────────────────────
   loadQuestions(category: string, count: number): TriviaQuestion[] {
-    let pool: TriviaQuestion[] = [];
-
-    if (category === 'Mixto') {
-      for (const cat of Object.keys(TRIVIA_QUESTIONS)) {
-        pool.push(...TRIVIA_QUESTIONS[cat]);
-      }
-    } else {
-      pool = [...(TRIVIA_QUESTIONS[category] || [])];
-    }
+    const pool: TriviaQuestion[] = [...(TRIVIA_QUESTIONS[category] || [])];
 
     this.questions = this.shuffle(pool).slice(0, Math.min(count, pool.length));
     this.totalQuestions$.next(this.questions.length);
@@ -151,7 +143,7 @@ export class TriviaService {
   // ─────────────────────────────────────────────────────────────────
   // HOST – create a Socket room
   // ─────────────────────────────────────────────────────────────────
-  createRoom(participants: { name: string; avatar: string }[], category: string = 'Mixto', count: number = 5): Promise<string> {
+  createRoom(participants: { name: string; avatar: string }[], category: string = 'Inteligencia Artificial', count: number = 5): Promise<string> {
     this.availableParticipants = participants;
     this.isHost = true;
     const socket = this.initSocket();
