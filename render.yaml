@@ -3,7 +3,7 @@ services:
     name: ruleta-trivia-backend
     runtime: node
     rootDir: server
-    buildCommand: npm install
+    buildCommand: npm install --omit=dev
     startCommand: npm start
     plan: free
     autoDeploy: false
@@ -12,3 +12,6 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
+

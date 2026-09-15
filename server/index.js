@@ -287,6 +287,12 @@ function endGame(room) {
   clearInterval(room.timerInterval);
   const rankings = Array.from(room.players.values()).sort((a, b) => b.score - a.score);
   io.to(room.id).emit('room:game-over', { rankings });
+  // Clean up room after 10 minutes to avoid memory accumulation
+  setTimeout(() => {
+    if (rooms.has(room.id)) {
+      rooms.delete(room.id);
+    }
+  }, 10 * 60 * 1000);
 }
 
 server.listen(PORT, '0.0.0.0', () => {
