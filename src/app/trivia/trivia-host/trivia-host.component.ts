@@ -26,12 +26,6 @@ import { ParticipantService } from '../../participant.service';
     <p class="phase-sub">Configura tu partida multijugador</p>
 
     <div class="form-grid">
-      <label class="form-label">
-        📚 Categoría
-        <select class="glass-input" [(ngModel)]="selectedCategory">
-          <option *ngFor="let c of triviaService.categories" [value]="c">{{ c }}</option>
-        </select>
-      </label>
       <div class="two-col">
         <label class="form-label">
           ❓ Nº de preguntas
@@ -602,7 +596,7 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
   currentAnswers: { [name: string]: string } = {};
 
   // Setup form
-  selectedCategory = 'Mixto';
+  selectedCategory = 'Inteligencia Artificial';
   questionCount = 10;
   timeLimit = 20;
 
