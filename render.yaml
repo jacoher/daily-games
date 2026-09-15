@@ -3,7 +3,7 @@ services:
     name: ruleta-trivia-backend
     runtime: node
     rootDir: server
-    buildCommand: npm install --omit=dev
+    buildCommand: npm ci --omit=dev
     startCommand: npm start
     plan: free
     autoDeploy: false
