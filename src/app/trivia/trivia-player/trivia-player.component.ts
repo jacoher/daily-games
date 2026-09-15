@@ -86,19 +86,19 @@ import { TriviaService, GamePhase, TriviaPlayer, TriviaQuestion, RevealData } fr
     <div class="ans-grid" *ngIf="!myAnswer">
       <button class="ans-btn opt-a" (click)="answer('a')" [disabled]="!!myAnswer">
         <span class="ans-letter">A</span>
-        <span class="ans-text">{{ currentQ.options[0]?.text }}</span>
+        <span class="ans-text">{{ currentQ.options[0].text }}</span>
       </button>
       <button class="ans-btn opt-b" (click)="answer('b')" [disabled]="!!myAnswer">
         <span class="ans-letter">B</span>
-        <span class="ans-text">{{ currentQ.options[1]?.text }}</span>
+        <span class="ans-text">{{ currentQ.options[1].text }}</span>
       </button>
       <button class="ans-btn opt-c" (click)="answer('c')" [disabled]="!!myAnswer">
         <span class="ans-letter">C</span>
-        <span class="ans-text">{{ currentQ.options[2]?.text }}</span>
+        <span class="ans-text">{{ currentQ.options[2].text }}</span>
       </button>
       <button class="ans-btn opt-d" (click)="answer('d')" [disabled]="!!myAnswer">
         <span class="ans-letter">D</span>
-        <span class="ans-text">{{ currentQ.options[3]?.text }}</span>
+        <span class="ans-text">{{ currentQ.options[3].text }}</span>
       </button>
     </div>
 
