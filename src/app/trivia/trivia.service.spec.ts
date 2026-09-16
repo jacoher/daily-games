@@ -23,4 +23,22 @@ describe('TriviaService', () => {
   it('should expose only the Inteligencia Artificial category', () => {
     expect(service.categories).toEqual(['Inteligencia Artificial']);
   });
+
+  it('should filter questions by difficulty', () => {
+    const facil = service.loadQuestions('Inteligencia Artificial', 10, 'facil');
+    expect(facil.length).toBe(10);
+    expect(facil.every(q => q.difficulty === 'facil')).toBe(true);
+
+    const medio = service.loadQuestions('Inteligencia Artificial', 10, 'medio');
+    expect(medio.length).toBe(10);
+    expect(medio.every(q => q.difficulty === 'medio')).toBe(true);
+
+    const dificil = service.loadQuestions('Inteligencia Artificial', 10, 'dificil');
+    expect(dificil.length).toBe(10);
+    expect(dificil.every(q => q.difficulty === 'dificil')).toBe(true);
+
+    const todas = service.loadQuestions('Inteligencia Artificial', 15, 'todas');
+    expect(todas.length).toBe(15);
+  });
 });
+
