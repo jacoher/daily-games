@@ -72,6 +72,9 @@ import { TriviaService, GamePhase, TriviaPlayer, TriviaQuestion, RevealData } fr
   <div class="question-screen" *ngIf="phase === 'question' && currentQ && !connecting">
     <div class="q-meta">
       <span class="q-num">{{ qIndex + 1 }}/{{ totalQ }}</span>
+      <span class="diff-chip diff-{{ currentQ.difficulty }}" *ngIf="currentQ.difficulty">
+        {{ currentQ.difficulty === 'facil' ? '🟢 Fácil' : currentQ.difficulty === 'medio' ? '🟡 Medio' : '🔴 Difícil' }}
+      </span>
       <span class="q-cat">{{ currentQ.category }}</span>
       <span class="q-timer" [class.urgent]="secondsLeft <= 5">{{ secondsLeft }}s</span>
     </div>
@@ -316,6 +319,27 @@ import { TriviaService, GamePhase, TriviaPlayer, TriviaQuestion, RevealData } fr
     .q-cat {
       flex: 1; background: rgba(6,182,212,0.15); color: #06b6d4;
       padding: 0.3rem 1rem; border-radius: 20px; font-size: 0.9rem; text-align: center; font-weight: 600;
+    }
+    .diff-chip {
+      font-size: 0.8rem; font-weight: 700;
+      padding: 0.2rem 0.65rem; border-radius: 20px;
+      display: inline-flex; align-items: center; gap: 4px;
+      letter-spacing: 0.3px; white-space: nowrap;
+    }
+    .diff-chip.diff-facil {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #4ade80;
+    }
+    .diff-chip.diff-medio {
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.4);
+      color: #fde047;
+    }
+    .diff-chip.diff-dificil {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #fb7185;
     }
     .q-timer {
       font-size: 1.6rem; font-weight: 900; width: 60px; text-align: right;
