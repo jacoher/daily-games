@@ -16,12 +16,15 @@ export interface TriviaPlayer {
   answers?: { questionIndex: number; answerId: string; correct: boolean }[];
 }
 
+export type TriviaDifficulty = 'facil' | 'medio' | 'dificil';
+
 export interface TriviaQuestion {
   id: string;
   text: string;
   options: { id: string; text: string }[];
   correctId?: string;
   category: string;
+  difficulty?: TriviaDifficulty;
   explanation?: string;
 }
 
@@ -119,8 +122,14 @@ export class TriviaService {
   // ─────────────────────────────────────────────────────────────────
   // QUESTIONS & CATEGORIES
   // ─────────────────────────────────────────────────────────────────
-  loadQuestions(category: string, count: number): TriviaQuestion[] {
-    const pool: TriviaQuestion[] = [...(TRIVIA_QUESTIONS[category] || [])];
+  selectedDifficulty: TriviaDifficulty | 'todas' = 'todas';
+
+  loadQuestions(category: string, count: number, difficulty: TriviaDifficulty | 'todas' = 'todas'): TriviaQuestion[] {
+    let pool: TriviaQuestion[] = [...(TRIVIA_QUESTIONS[category] || [])];
+
+    if (difficulty && difficulty !== 'todas') {
+      pool = pool.filter(q => q.difficulty === difficulty);
+    }
 
     this.questions = this.shuffle(pool).slice(0, Math.min(count, pool.length));
     this.totalQuestions$.next(this.questions.length);
@@ -143,16 +152,23 @@ export class TriviaService {
   // ─────────────────────────────────────────────────────────────────
   // HOST – create a Socket room
   // ─────────────────────────────────────────────────────────────────
-  createRoom(participants: { name: string; avatar: string }[], category: string = 'Inteligencia Artificial', count: number = 5): Promise<string> {
+  createRoom(
+    participants: { name: string; avatar: string }[],
+    category: string = 'Inteligencia Artificial',
+    count: number = 5,
+    difficulty: TriviaDifficulty | 'todas' = 'todas'
+  ): Promise<string> {
+    this.selectedDifficulty = difficulty;
     this.availableParticipants = participants;
     this.isHost = true;
     const socket = this.initSocket();
 
-    const selectedQuestions = this.loadQuestions(category, count);
+    const selectedQuestions = this.loadQuestions(category, count, difficulty);
 
     return new Promise((resolve, reject) => {
       socket.emit('host:create-room', {
         category,
+        difficulty,
         timeLimit: this.timeLimit,
         questionCount: selectedQuestions.length,
         questions: selectedQuestions,
@@ -388,6 +404,7 @@ export class TriviaService {
       this.socket = null;
     }
     this.questions = [];
+    this.selectedDifficulty = 'todas';
     this.isHost = false;
     this.roomId = '';
     this.myName = '';

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import QRCode from 'qrcode';
-import { TriviaService, GamePhase, TriviaPlayer, TriviaQuestion, RevealData } from '../trivia.service';
+import { TriviaService, GamePhase, TriviaPlayer, TriviaQuestion, RevealData, TriviaDifficulty } from '../trivia.service';
 import { ParticipantService } from '../../participant.service';
 
 @Component({
@@ -41,6 +41,24 @@ import { ParticipantService } from '../../participant.service';
             <option value="45">45 segundos</option>
           </select>
         </label>
+      </div>
+
+      <div class="diff-control-wrap">
+        <label class="form-label">⚡ Dificultad</label>
+        <div class="diff-pill-group" role="radiogroup" aria-label="Nivel de dificultad">
+          <button type="button" class="diff-pill" [class.active]="selectedDifficulty === 'todas'" (click)="selectedDifficulty = 'todas'">
+            <span class="pill-icon">🎲</span> Todas
+          </button>
+          <button type="button" class="diff-pill pill-facil" [class.active]="selectedDifficulty === 'facil'" (click)="selectedDifficulty = 'facil'">
+            <span class="pill-icon">🟢</span> Fácil
+          </button>
+          <button type="button" class="diff-pill pill-medio" [class.active]="selectedDifficulty === 'medio'" (click)="selectedDifficulty = 'medio'">
+            <span class="pill-icon">🟡</span> Medio
+          </button>
+          <button type="button" class="diff-pill pill-dificil" [class.active]="selectedDifficulty === 'dificil'" (click)="selectedDifficulty = 'dificil'">
+            <span class="pill-icon">🔴</span> Difícil
+          </button>
+        </div>
       </div>
     </div>
 
@@ -81,6 +99,9 @@ import { ParticipantService } from '../../participant.service';
 
       <div class="game-config-badge">
         <span>📚 {{ selectedCategory }}</span>
+        <span class="diff-chip diff-{{ selectedDifficulty }}">
+          {{ selectedDifficulty === 'facil' ? '🟢 Fácil' : selectedDifficulty === 'medio' ? '🟡 Medio' : selectedDifficulty === 'dificil' ? '🔴 Difícil' : '🎲 Todas' }}
+        </span>
         <span>❓ {{ triviaService.totalQuestions$.value }} preguntas</span>
         <span>⏱ {{ timeLimit }}s</span>
       </div>
@@ -123,6 +144,9 @@ import { ParticipantService } from '../../participant.service';
   <div class="phase-card glass question-layout" *ngIf="phase === 'question' && currentQ">
     <div class="q-header">
       <span class="q-counter">Pregunta {{ qIndex + 1 }} / {{ totalQ }}</span>
+      <span class="diff-chip diff-{{ currentQ.difficulty }}" *ngIf="currentQ.difficulty">
+        {{ currentQ.difficulty === 'facil' ? '🟢 Fácil' : currentQ.difficulty === 'medio' ? '🟡 Medio' : '🔴 Difícil' }}
+      </span>
       <span class="q-category">{{ currentQ.category }}</span>
     </div>
 
@@ -326,6 +350,86 @@ import { ParticipantService } from '../../participant.service';
     }
     .glass-input:focus { border-color: rgba(168,85,247,0.6); }
     .glass-input option { background: #1a0a2e; color: #fff; }
+
+    /* DIFFICULTY SEGMENTED CONTROL */
+    .diff-control-wrap {
+      display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;
+    }
+    .diff-pill-group {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; width: 100%;
+    }
+    @media (max-width: 580px) {
+      .diff-pill-group { grid-template-columns: 1fr 1fr; }
+    }
+    .diff-pill {
+      min-height: 44px; padding: 0.5rem 0.6rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      color: rgba(255, 255, 255, 0.75);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem; font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+    .diff-pill:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+    .diff-pill.active {
+      color: #fff; font-weight: 700;
+      background: rgba(168, 85, 247, 0.25);
+      border-color: #a855f7;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.35);
+      transform: translateY(-1px);
+    }
+    .diff-pill.pill-facil.active {
+      background: rgba(34, 197, 94, 0.22);
+      border-color: #22c55e;
+      box-shadow: 0 0 16px rgba(34, 197, 94, 0.35);
+    }
+    .diff-pill.pill-medio.active {
+      background: rgba(234, 179, 8, 0.22);
+      border-color: #eab308;
+      box-shadow: 0 0 16px rgba(234, 179, 8, 0.35);
+    }
+    .diff-pill.pill-dificil.active {
+      background: rgba(244, 63, 94, 0.22);
+      border-color: #f43f5e;
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.35);
+    }
+    .pill-icon { font-size: 1rem; }
+
+    /* DIFFICULTY CHIPS */
+    .diff-chip {
+      font-size: 0.8rem; font-weight: 700;
+      padding: 0.2rem 0.65rem; border-radius: 20px;
+      display: inline-flex; align-items: center; gap: 4px;
+      letter-spacing: 0.3px;
+    }
+    .diff-chip.diff-facil {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #4ade80;
+    }
+    .diff-chip.diff-medio {
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.4);
+      color: #fde047;
+    }
+    .diff-chip.diff-dificil {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+    .diff-chip.diff-todas {
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      color: #c084fc;
+    }
 
     .cta-btn {
       width: 100%; padding: 1rem; border: none; border-radius: 14px;
@@ -597,6 +701,7 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
 
   // Setup form
   selectedCategory = 'Inteligencia Artificial';
+  selectedDifficulty: TriviaDifficulty | 'todas' = 'todas';
   questionCount = 10;
   timeLimit = 20;
 
@@ -650,7 +755,12 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
       name: p.name, avatar: p.avatarUrl
     }));
 
-    const roomId = await this.triviaService.createRoom(participants, this.selectedCategory, Number(this.questionCount));
+    const roomId = await this.triviaService.createRoom(
+      participants,
+      this.selectedCategory,
+      Number(this.questionCount),
+      this.selectedDifficulty
+    );
     
     // Detect and save local IP only when on local environment
     if (this.isLocalHost()) {
