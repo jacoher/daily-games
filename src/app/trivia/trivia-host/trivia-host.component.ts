@@ -69,7 +69,7 @@ import { ParticipantService } from '../../participant.service';
           </button>
         </div>
 
-        <div style="width: 100%; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start;">
+        <div *ngIf="isLocalHost()" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start;">
           <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">¿El QR no funciona?</span>
           <span style="font-size: 0.65rem; color: rgba(255,255,255,0.35); line-height: 1.25;">Escribe la IP local de tu PC si usas móvil en red local:</span>
           <input type="text" [(ngModel)]="customIp" (ngModelChange)="onIpChange()" placeholder="Ej: 192.168.1.15" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.35rem 0.5rem; color: #fff; font-family: monospace; font-size: 0.8rem; box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(168,85,247,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'" />
@@ -652,11 +652,24 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
 
     const roomId = await this.triviaService.createRoom(participants, this.selectedCategory, Number(this.questionCount));
     
-    // Detect and save local IP
-    const ip = await this.triviaService.getLocalIP();
-    this.customIp = ip;
+    // Detect and save local IP only when on local environment
+    if (this.isLocalHost()) {
+      const ip = await this.triviaService.getLocalIP();
+      this.customIp = ip;
+    } else {
+      this.customIp = '';
+    }
     
     await this.buildQR(roomId);
+  }
+
+  isLocalHost(): boolean {
+    const hostname = window.location.hostname || 'localhost';
+    return hostname === 'localhost' ||
+           hostname === '127.0.0.1' ||
+           hostname.startsWith('192.168.') ||
+           hostname.startsWith('10.') ||
+           hostname.endsWith('.local');
   }
 
   private async buildQR(roomId: string) {
@@ -665,10 +678,16 @@ export class TriviaHostComponent implements OnInit, OnDestroy {
 
     if (hostname.includes('github.io') || hostname.includes('jacoher.github.io')) {
       url = `https://jacoher.github.io/daily-games/trivia/play?room=${roomId}`;
-    } else {
-      const port = window.location.port || '4200';
+    } else if (this.isLocalHost()) {
+      const port = window.location.port ? `:${window.location.port}` : ':4200';
       const host = this.customIp || hostname || 'localhost';
-      url = `http://${host}:${port}/trivia/play?room=${roomId}`;
+      url = `http://${host}${port}/trivia/play?room=${roomId}`;
+    } else {
+      // Production domain (Netlify, Render, custom domain)
+      const portStr = window.location.port ? `:${window.location.port}` : '';
+      const protocol = window.location.protocol || 'https:';
+      const host = this.customIp && this.customIp !== hostname ? this.customIp : hostname;
+      url = `${protocol}//${host}${portStr}/trivia/play?room=${roomId}`;
     }
 
     this.joinUrl = url;
