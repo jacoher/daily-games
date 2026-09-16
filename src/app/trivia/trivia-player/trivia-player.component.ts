@@ -110,7 +110,7 @@ import { TriviaService, GamePhase, TriviaPlayer, TriviaQuestion, RevealData } fr
         <span class="ans-letter">{{ myAnswer.toUpperCase() }}</span>
         <span class="ans-text">{{ getOptionText(myAnswer) }}</span>
       </div>
-      <p class="wait-reveal">⏳ Esperando que el host revele la respuesta...</p>
+      <p class="wait-reveal">⏳ Esperando a los demás participantes o que se agote el tiempo...</p>
     </div>
 
     <div class="no-answer-msg" *ngIf="secondsLeft <= 0 && !myAnswer">
