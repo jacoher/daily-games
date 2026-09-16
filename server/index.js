@@ -52,6 +52,7 @@ io.on('connection', (socket) => {
       questionStartTime: 0,
       timerInterval: null,
       secondsLeft: 0,
+      isRevealed: false,
       players: new Map(), // socketId -> { socketId, name, avatar, score, correctCount, wrongCount }
       currentAnswers: new Map(), // socketId -> { answerId, elapsedMs, isCorrect, playerName }
       availableParticipants: participants || []
@@ -169,7 +170,7 @@ io.on('connection', (socket) => {
     });
 
     // Check if all players answered
-    if (room.currentAnswers.size >= room.players.size && room.players.size > 0) {
+    if (!room.isRevealed && room.currentAnswers.size >= room.players.size && room.players.size > 0) {
       revealRound(room);
     }
   });
@@ -183,6 +184,16 @@ io.on('connection', (socket) => {
       } else if (room.players.has(socket.id)) {
         room.players.delete(socket.id);
         io.to(roomId).emit('room:players-update', Array.from(room.players.values()));
+
+        // If a player leaves during a question and now all remaining players have answered
+        if (
+          !room.isRevealed &&
+          room.currentQuestionIndex >= 0 &&
+          room.players.size > 0 &&
+          room.currentAnswers.size >= room.players.size
+        ) {
+          revealRound(room);
+        }
       }
     }
   });
@@ -192,6 +203,7 @@ function dispatchQuestion(room, index) {
   clearInterval(room.timerInterval);
   room.currentQuestionIndex = index;
   room.currentAnswers.clear();
+  room.isRevealed = false;
   room.questionStartTime = Date.now();
   room.secondsLeft = room.timeLimit;
 
@@ -219,6 +231,8 @@ function dispatchQuestion(room, index) {
 }
 
 function revealRound(room) {
+  if (room.isRevealed) return;
+  room.isRevealed = true;
   clearInterval(room.timerInterval);
   const q = room.questions[room.currentQuestionIndex];
   if (!q) return;
