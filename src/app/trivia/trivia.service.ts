@@ -16,12 +16,15 @@ export interface TriviaPlayer {
   answers?: { questionIndex: number; answerId: string; correct: boolean }[];
 }
 
+export type TriviaDifficulty = 'facil' | 'medio' | 'dificil';
+
 export interface TriviaQuestion {
   id: string;
   text: string;
   options: { id: string; text: string }[];
   correctId?: string;
   category: string;
+  difficulty?: TriviaDifficulty;
   explanation?: string;
 }
 
