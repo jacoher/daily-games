@@ -1,0 +1,120 @@
+<div class="player-container animate-in">
+  <!-- ════════ LOBBY / JOIN VIEW ════════ -->
+  <div class="join-screen glass-panel" *ngIf="!joined">
+    <header class="join-header">
+      <button class="glass-btn back-btn" (click)="goBack()">⬅️ Salir</button>
+      <div class="room-tag">SALA: <strong>{{ roomId || '—' }}</strong></div>
+    </header>
+
+    <div class="join-content">
+      <div class="join-icon">🃏</div>
+      <h1 class="join-title">Planning Poker</h1>
+      <p class="join-subtitle">Elige tu participante o escribe tu nombre para votar</p>
+
+      <div class="error-banner" *ngIf="errorMsg">
+        ⚠️ {{ errorMsg }}
+      </div>
+
+      <!-- Predefined Participants from Setup -->
+      <div class="predefined-section" *ngIf="pokerService.availableParticipants.length > 0">
+        <span class="section-title">Participantes de la Sala:</span>
+        <div class="predefined-grid">
+          <button 
+            *ngFor="let p of pokerService.availableParticipants"
+            class="predefined-card"
+            [disabled]="isParticipantTaken(p.name) || joining"
+            (click)="selectPredefined(p)">
+            <img [src]="p.avatarUrl || p.avatar" class="predefined-avatar" alt="avatar" />
+            <span class="predefined-name">{{ p.name }}</span>
+            <span class="taken-badge" *ngIf="isParticipantTaken(p.name)">Conectado</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Name Input -->
+      <div class="custom-name-box">
+        <label class="input-label">O ingresa un nuevo nombre:</label>
+        <div class="custom-input-row">
+          <input 
+            type="text" 
+            class="glass-input" 
+            [(ngModel)]="customNameInput" 
+            (keyup.enter)="joinWithCustomName()"
+            placeholder="Tu nombre o apodo..." 
+            [disabled]="joining"
+          />
+          <button 
+            class="glass-btn primary-btn" 
+            (click)="joinWithCustomName()" 
+            [disabled]="!customNameInput.trim() || joining">
+            {{ joining ? 'Entrando...' : 'Entrar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ GAME / VOTING VIEW ════════ -->
+  <div class="game-screen" *ngIf="joined">
+    <!-- Header -->
+    <header class="player-topbar glass-panel">
+      <div class="user-chip">
+        <img [src]="myAvatar" class="user-avatar" alt="avatar" />
+        <span class="user-name">{{ myName }}</span>
+      </div>
+      <div class="room-indicator">
+        <span>SALA</span>
+        <strong>{{ roomId }}</strong>
+      </div>
+    </header>
+
+    <!-- Story Info Card -->
+    <div class="story-card glass-panel">
+      <span class="story-badge">ESTIMANDO TAREA</span>
+      <h2 class="story-name">{{ currentStory?.title || 'Esperando historia...' }}</h2>
+      <div class="story-settled-info" *ngIf="currentStory?.estimate">
+        <span>Estimación final:</span>
+        <strong class="final-score">{{ currentStory?.estimate }}</strong>
+      </div>
+    </div>
+
+    <!-- Active Vote Indicator -->
+    <div class="vote-status-banner" [class.voted]="!!myVote" [class.revealed]="revealed">
+      <div *ngIf="!revealed">
+        <span *ngIf="!myVote">Selecciona una carta abajo para votar</span>
+        <span *ngIf="myVote">Has votado: <strong class="voted-chip">{{ myVote }}</strong> (puedes cambiarlo)</span>
+      </div>
+      <div *ngIf="revealed" class="revealed-banner-text">
+        <span>👀 ¡Cartas Reveladas en Pantalla!</span>
+      </div>
+    </div>
+
+    <!-- Voting Deck (Cards Grid) -->
+    <div class="deck-grid" [class.disabled-deck]="revealed">
+      <button 
+        *ngFor="let card of deckCards"
+        class="poker-card"
+        [class.selected]="myVote === card"
+        [disabled]="revealed"
+        (click)="castVote(card)">
+        <div class="card-corner top-left">{{ card }}</div>
+        <div class="card-main-val">{{ card }}</div>
+        <div class="card-corner bottom-right">{{ card }}</div>
+      </button>
+    </div>
+
+    <!-- Live Reactions Floating Bar -->
+    <div class="reactions-bar glass-panel">
+      <span class="reactions-title">Reaccionar:</span>
+      <div class="reactions-btns">
+        <button 
+          *ngFor="let em of quickReactions"
+          class="reaction-btn"
+          [class.pop]="recentReaction === em"
+          (click)="sendReaction(em)">
+          {{ em }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
