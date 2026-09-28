@@ -192,7 +192,7 @@ export class PokerHostComponent implements OnInit, OnDestroy {
   }
 
   revealCards() {
-    this.soundService.playWheelTick(35);
+    this.soundService.playTick();
     this.pokerService.reveal();
   }
 
@@ -219,7 +219,7 @@ export class PokerHostComponent implements OnInit, OnDestroy {
   // --- Fun Dynamics ---
 
   private onRevealEffects() {
-    this.soundService.playWheelTick(45);
+    this.soundService.playTick();
 
     // 1. Consensus Party
     if (this.stats.isConsensus && this.stats.consensusValue) {
@@ -324,7 +324,7 @@ export class PokerHostComponent implements OnInit, OnDestroy {
     const targetAngle = extraSpins + (360 - (winnerIdx * segmentAngle + segmentAngle / 2));
 
     this.rouletteRotation += targetAngle;
-    this.soundService.playWheelTick(20);
+    this.soundService.playSpinningSound(3000);
 
     setTimeout(() => {
       this.rouletteWinner = chosen;
