@@ -10,6 +10,7 @@ export interface PokerPlayer {
   vote?: string;
   hasVoted: boolean;
   connected: boolean;
+  isSpectator?: boolean;
 }
 
 export interface PokerStory {
@@ -23,6 +24,13 @@ export interface PokerDuelists {
   high: { name: string; vote: string };
 }
 
+export interface PokerVoteDistributionItem {
+  value: string;
+  count: number;
+  percentage: number;
+  voters: string[];
+}
+
 export interface PokerStats {
   average: number | null;
   median: string | null;
@@ -31,6 +39,7 @@ export interface PokerStats {
   consensusValue: string | null;
   hasExtremeDuel: boolean;
   duelists: PokerDuelists | null;
+  distribution: PokerVoteDistributionItem[];
 }
 
 export interface PokerRoomData {
@@ -40,4 +49,5 @@ export interface PokerRoomData {
   currentStoryIndex: number;
   revealed: boolean;
   players: PokerPlayer[];
+  availableParticipants?: Array<{ name: string; avatarUrl?: string; avatar?: string }>;
 }

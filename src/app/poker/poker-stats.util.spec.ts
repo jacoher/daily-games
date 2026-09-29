@@ -54,4 +54,24 @@ describe('PokerStatsUtil', () => {
     expect(stats.duelists?.low.name).toBe('Alice');
     expect(stats.duelists?.high.name).toBe('David');
   });
+
+  it('should calculate vote distribution correctly and ignore spectators', () => {
+    const players = [
+      { name: 'Alice', vote: '5', isSpectator: false },
+      { name: 'Bob', vote: '5', isSpectator: false },
+      { name: 'Charlie', vote: '8', isSpectator: false },
+      { name: 'Dave', vote: '5', isSpectator: true }
+    ];
+
+    const stats = calculatePokerStats(players, 'fibonacci');
+    expect(stats.distribution.length).toBe(2);
+    const fiveItem = stats.distribution.find(d => d.value === '5');
+    expect(fiveItem?.count).toBe(2);
+    expect(fiveItem?.percentage).toBe(67);
+    expect(fiveItem?.voters).toEqual(['Alice', 'Bob']);
+    const eightItem = stats.distribution.find(d => d.value === '8');
+    expect(eightItem?.count).toBe(1);
+    expect(eightItem?.percentage).toBe(33);
+    expect(eightItem?.voters).toEqual(['Charlie']);
+  });
 });

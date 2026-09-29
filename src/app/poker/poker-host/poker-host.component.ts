@@ -47,7 +47,8 @@ export class PokerHostComponent implements OnInit, OnDestroy {
     isConsensus: false,
     consensusValue: null,
     hasExtremeDuel: false,
-    duelists: null
+    duelists: null,
+    distribution: []
   };
 
   // QR & Joining
@@ -200,6 +201,23 @@ export class PokerHostComponent implements OnInit, OnDestroy {
     if (index === this.currentStoryIndex) return;
     this.currentStoryIndex = index;
     this.pokerService.setStories(this.stories, index);
+    this.soundService.playTick();
+  }
+
+  deleteStory(index: number, event?: MouseEvent) {
+    if (event) {
+      event.stopPropagation();
+    }
+    const updated = this.stories.filter((_, i) => i !== index);
+    let newIndex = this.currentStoryIndex;
+    if (index === this.currentStoryIndex) {
+      newIndex = Math.max(0, Math.min(index, updated.length - 1));
+    } else if (index < this.currentStoryIndex) {
+      newIndex = Math.max(0, this.currentStoryIndex - 1);
+    }
+    this.stories = updated;
+    this.currentStoryIndex = newIndex;
+    this.pokerService.setStories(updated, newIndex);
     this.soundService.playTick();
   }
 

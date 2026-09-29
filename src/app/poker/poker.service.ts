@@ -34,7 +34,8 @@ export class PokerService {
     isConsensus: false,
     consensusValue: null,
     hasExtremeDuel: false,
-    duelists: null
+    duelists: null,
+    distribution: []
   });
   myVote$ = new BehaviorSubject<string | null>(null);
   reactions$ = new Subject<PokerReactionEvent>();
@@ -76,7 +77,7 @@ export class PokerService {
 
     const serverUrl = this.getServerUrl();
     this.socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       reconnectionAttempts: 5
     });
 
@@ -188,6 +189,33 @@ export class PokerService {
     });
   }
 
+  getRoomInfo(roomId: string): Promise<any> {
+    const s = this.initSocket();
+    const cleanId = (roomId || '').trim().toUpperCase();
+
+    return new Promise((resolve, reject) => {
+      s.emit('poker:get-info', { roomId: cleanId }, (res: any) => {
+        this.zone.run(() => {
+          if (res?.success) {
+            this.roomId$.next(res.roomId);
+            if (res.deckType) this.deckType$.next(res.deckType);
+            if (res.stories) this.stories$.next(res.stories);
+            if (typeof res.currentStoryIndex === 'number') this.currentStoryIndex$.next(res.currentStoryIndex);
+            if (res.participants) this.availableParticipants = res.participants;
+            if (res.players) {
+              this.players$.next(res.players);
+              this.updateStats();
+            }
+            resolve(res);
+          } else {
+            this.errorMsg$.next(res?.message || 'Sala no encontrada');
+            reject(new Error(res?.message || 'Sala no encontrada'));
+          }
+        });
+      });
+    });
+  }
+
   joinRoom(roomId: string, name: string, avatar?: string): Promise<boolean> {
     const s = this.initSocket();
     this.isHost = false;
@@ -205,6 +233,9 @@ export class PokerService {
             this.currentStoryIndex$.next(r.currentStoryIndex);
             this.revealed$.next(r.revealed);
             this.players$.next(r.players);
+            if (r.availableParticipants) {
+              this.availableParticipants = r.availableParticipants;
+            }
             if (res.player?.vote) {
               this.myVote$.next(res.player.vote);
             }
@@ -276,7 +307,8 @@ export class PokerService {
         isConsensus: false,
         consensusValue: null,
         hasExtremeDuel: false,
-        duelists: null
+        duelists: null,
+        distribution: []
       });
       return;
     }
@@ -284,7 +316,7 @@ export class PokerService {
     const currentPlayers = this.players$.value;
     const votes = currentPlayers
       .filter(p => p.vote && p.vote !== 'hidden')
-      .map(p => ({ name: p.name, vote: p.vote as string }));
+      .map(p => ({ name: p.name, vote: p.vote as string, isSpectator: p.isSpectator }));
 
     const stats = calculatePokerStats(votes, this.deckType$.value);
     this.stats$.next(stats);

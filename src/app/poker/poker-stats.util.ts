@@ -1,10 +1,42 @@
-import { FIBONACCI_CARDS, PokerDeckType, PokerStats, TSHIRT_CARDS } from './poker.types';
+import { FIBONACCI_CARDS, PokerDeckType, PokerStats, PokerVoteDistributionItem, TSHIRT_CARDS } from './poker.types';
 
 export function calculatePokerStats(
-  votes: Array<{ name: string; vote: string }>,
+  votes: Array<{ name: string; vote?: string | null; isSpectator?: boolean }>,
   deckType: PokerDeckType
 ): PokerStats {
-  const validVotes = votes.filter(v => v.vote && v.vote !== '?' && v.vote !== '☕');
+  // Exclude spectators and players without a valid vote
+  const eligibleVotes = (votes || []).filter(v => !v.isSpectator);
+  const castVotes = eligibleVotes.filter(v => !!v.vote && v.vote !== 'hidden');
+
+  // Build distribution from all cast votes (including ?, ☕, etc.)
+  const deckOrder = deckType === 'fibonacci' ? FIBONACCI_CARDS : TSHIRT_CARDS;
+  const distributionMap = new Map<string, { count: number; voters: string[] }>();
+  for (const v of castVotes) {
+    const val = v.vote!;
+    if (!distributionMap.has(val)) {
+      distributionMap.set(val, { count: 0, voters: [] });
+    }
+    const item = distributionMap.get(val)!;
+    item.count += 1;
+    item.voters.push(v.name);
+  }
+
+  const totalCast = castVotes.length;
+  const distribution: PokerVoteDistributionItem[] = Array.from(distributionMap.entries()).map(([value, item]) => ({
+    value,
+    count: item.count,
+    percentage: totalCast > 0 ? Math.round((item.count / totalCast) * 100) : 0,
+    voters: item.voters
+  })).sort((a, b) => {
+    const idxA = deckOrder.indexOf(a.value);
+    const idxB = deckOrder.indexOf(b.value);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.value.localeCompare(b.value);
+  });
+
+  const validVotes = castVotes.filter(v => v.vote !== '?' && v.vote !== '☕') as Array<{ name: string; vote: string }>;
 
   if (validVotes.length === 0) {
     return {
@@ -14,7 +46,8 @@ export function calculatePokerStats(
       isConsensus: false,
       consensusValue: null,
       hasExtremeDuel: false,
-      duelists: null
+      duelists: null,
+      distribution
     };
   }
 
@@ -41,7 +74,7 @@ export function calculatePokerStats(
       .filter(v => !isNaN(v.val));
 
     if (numericVotes.length === 0) {
-      return { average: null, median: null, mode, isConsensus, consensusValue, hasExtremeDuel: false, duelists: null };
+      return { average: null, median: null, mode, isConsensus, consensusValue, hasExtremeDuel: false, duelists: null, distribution };
     }
 
     numericVotes.sort((a, b) => a.val - b.val);
@@ -68,7 +101,8 @@ export function calculatePokerStats(
       isConsensus,
       consensusValue,
       hasExtremeDuel,
-      duelists: hasExtremeDuel ? { low: { name: min.name, vote: min.voteStr }, high: { name: max.name, vote: max.voteStr } } : null
+      duelists: hasExtremeDuel ? { low: { name: min.name, vote: min.voteStr }, high: { name: max.name, vote: max.voteStr } } : null,
+      distribution
     };
   } else {
     // T-shirt sizes
@@ -92,7 +126,8 @@ export function calculatePokerStats(
       isConsensus,
       consensusValue,
       hasExtremeDuel: !!hasExtremeDuel,
-      duelists: hasExtremeDuel ? { low: { name: min.name, vote: min.voteStr }, high: { name: max.name, vote: max.voteStr } } : null
+      duelists: hasExtremeDuel ? { low: { name: min.name, vote: min.voteStr }, high: { name: max.name, vote: max.voteStr } } : null,
+      distribution
     };
   }
 }
