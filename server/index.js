@@ -69,8 +69,36 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Get poker room info (participants, players, deck, etc.)
+  socket.on('poker:get-info', ({ roomId }, callback) => {
+    const cleanId = (roomId || '').trim().toUpperCase();
+    const room = pokerRooms.get(cleanId);
+
+    if (!room) {
+      if (callback) callback({ success: false, message: 'Sala de Poker no encontrada' });
+      return;
+    }
+
+    socket.join(room.id);
+
+    if (callback) {
+      callback({
+        success: true,
+        roomId: room.id,
+        deckType: room.deckType,
+        stories: room.stories,
+        currentStoryIndex: room.currentStoryIndex,
+        participants: room.availableParticipants || [],
+        players: Array.from(room.players.values()).map(p => ({
+          ...p,
+          vote: room.revealed ? p.vote : (p.hasVoted ? 'hidden' : null)
+        }))
+      });
+    }
+  });
+
   // Player joins poker room
-  socket.on('poker:join-room', ({ roomId, name, avatar }, callback) => {
+  socket.on('poker:join-room', ({ roomId, name, avatar, isSpectator }, callback) => {
     const cleanId = (roomId || '').trim().toUpperCase();
     const room = pokerRooms.get(cleanId);
 
@@ -91,6 +119,13 @@ io.on('connection', (socket) => {
       player.socketId = socket.id;
       player.connected = true;
       if (avatar) player.avatar = avatar;
+      if (typeof isSpectator === 'boolean') {
+        player.isSpectator = isSpectator;
+        if (player.isSpectator) {
+          player.vote = null;
+          player.hasVoted = false;
+        }
+      }
     } else {
       player = {
         socketId: socket.id,
@@ -98,7 +133,8 @@ io.on('connection', (socket) => {
         avatar: avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(trimmedName)}`,
         vote: null,
         hasVoted: false,
-        connected: true
+        connected: true,
+        isSpectator: !!isSpectator
       };
       room.players.set(trimmedName, player);
     }
@@ -121,6 +157,42 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Toggle spectator mode
+  socket.on('poker:toggle-spectator', ({ roomId, isSpectator }, callback) => {
+    const room = pokerRooms.get(roomId);
+    if (!room) return;
+
+    let targetPlayer = null;
+    for (const player of room.players.values()) {
+      if (player.socketId === socket.id) {
+        player.isSpectator = !!isSpectator;
+        if (player.isSpectator) {
+          player.vote = null;
+          player.hasVoted = false;
+        }
+        targetPlayer = player;
+        break;
+      }
+    }
+
+    const playerList = Array.from(room.players.values());
+    const payload = playerList.map(p => ({
+      ...p,
+      vote: room.revealed ? p.vote : (p.hasVoted ? 'hidden' : null)
+    }));
+
+    if (room.revealed) {
+      io.to(room.id).emit('poker:revealed', {
+        players: playerList,
+        currentStory: room.stories[room.currentStoryIndex]
+      });
+    } else {
+      io.to(room.id).emit('poker:players-update', payload);
+    }
+
+    if (callback) callback({ success: true, isSpectator: !!isSpectator, player: targetPlayer });
+  });
+
   // Player votes
   socket.on('poker:vote', ({ roomId, vote }, callback) => {
     const room = pokerRooms.get(roomId);
@@ -128,6 +200,7 @@ io.on('connection', (socket) => {
 
     for (const player of room.players.values()) {
       if (player.socketId === socket.id) {
+        if (player.isSpectator) return; // Spectators cannot vote
         player.vote = vote;
         player.hasVoted = !!vote;
         break;
@@ -143,10 +216,13 @@ io.on('connection', (socket) => {
     if (callback) callback({ success: true });
   });
 
-  // Host reveals cards
+  // Host or authorized player reveals cards
   socket.on('poker:reveal', ({ roomId }) => {
     const room = pokerRooms.get(roomId);
-    if (!room || room.hostSocketId !== socket.id) return;
+    if (!room) return;
+    const isHost = room.hostSocketId === socket.id;
+    const isPlayer = Array.from(room.players.values()).some(p => p.socketId === socket.id);
+    if (!isHost && !isPlayer) return;
 
     room.revealed = true;
     io.to(room.id).emit('poker:revealed', {
@@ -155,10 +231,13 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Host resets round (revote or next)
+  // Host or authorized player resets round (revote or next)
   socket.on('poker:reset', ({ roomId }) => {
     const room = pokerRooms.get(roomId);
-    if (!room || room.hostSocketId !== socket.id) return;
+    if (!room) return;
+    const isHost = room.hostSocketId === socket.id;
+    const isPlayer = Array.from(room.players.values()).some(p => p.socketId === socket.id);
+    if (!isHost && !isPlayer) return;
 
     room.revealed = false;
     for (const player of room.players.values()) {
@@ -574,6 +653,7 @@ function pokerRoomForPlayer(room, socketId) {
 }
 
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, () => {
   console.log(`Trivia Socket Server running on port ${PORT}`);
 });
+

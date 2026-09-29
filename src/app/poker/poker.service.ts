@@ -38,6 +38,7 @@ export class PokerService {
     distribution: []
   });
   myVote$ = new BehaviorSubject<string | null>(null);
+  isSpectator$ = new BehaviorSubject<boolean>(false);
   reactions$ = new Subject<PokerReactionEvent>();
   errorMsg$ = new BehaviorSubject<string>('');
   isConnected$ = new BehaviorSubject<boolean>(false);
@@ -216,14 +217,15 @@ export class PokerService {
     });
   }
 
-  joinRoom(roomId: string, name: string, avatar?: string): Promise<boolean> {
+  joinRoom(roomId: string, name: string, avatar?: string, isSpectator: boolean = false): Promise<boolean> {
     const s = this.initSocket();
     this.isHost = false;
     this.myName = name;
     this.myAvatar = avatar || '';
+    this.isSpectator$.next(isSpectator);
 
     return new Promise((resolve, reject) => {
-      s.emit('poker:join-room', { roomId, name, avatar }, (res: any) => {
+      s.emit('poker:join-room', { roomId, name, avatar, isSpectator }, (res: any) => {
         this.zone.run(() => {
           if (res?.success) {
             this.roomId$.next(res.roomId);
@@ -236,8 +238,13 @@ export class PokerService {
             if (r.availableParticipants) {
               this.availableParticipants = r.availableParticipants;
             }
-            if (res.player?.vote) {
-              this.myVote$.next(res.player.vote);
+            if (res.player) {
+              if (res.player.vote) {
+                this.myVote$.next(res.player.vote);
+              }
+              if (typeof res.player.isSpectator === 'boolean') {
+                this.isSpectator$.next(res.player.isSpectator);
+              }
             }
             this.updateStats();
             resolve(true);
@@ -250,6 +257,24 @@ export class PokerService {
     });
   }
 
+  toggleSpectator(isSpectator: boolean): void {
+    if (!this.socket || !this.roomId$.value) return;
+    this.isSpectator$.next(isSpectator);
+    if (isSpectator) {
+      this.myVote$.next(null);
+    }
+    this.socket.emit('poker:toggle-spectator', {
+      roomId: this.roomId$.value,
+      isSpectator
+    }, (res: any) => {
+      if (res?.success) {
+        this.zone.run(() => {
+          this.isSpectator$.next(res.isSpectator);
+        });
+      }
+    });
+  }
+
   vote(card: string): void {
     if (!this.socket || !this.roomId$.value) return;
     this.myVote$.next(card);
@@ -257,12 +282,12 @@ export class PokerService {
   }
 
   reveal(): void {
-    if (!this.socket || !this.roomId$.value || !this.isHost) return;
+    if (!this.socket || !this.roomId$.value) return;
     this.socket.emit('poker:reveal', { roomId: this.roomId$.value });
   }
 
   reset(): void {
-    if (!this.socket || !this.roomId$.value || !this.isHost) return;
+    if (!this.socket || !this.roomId$.value) return;
     this.socket.emit('poker:reset', { roomId: this.roomId$.value });
   }
 
