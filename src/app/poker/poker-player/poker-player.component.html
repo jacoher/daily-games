@@ -1,0 +1,246 @@
+<div class="player-container animate-in">
+  <!-- ════════ LOBBY / JOIN VIEW ════════ -->
+  <div class="join-screen glass-panel" *ngIf="!joined">
+    <header class="join-header">
+      <button class="glass-btn back-btn" (click)="goBack()">⬅️ Salir</button>
+      <div class="room-tag">SALA: <strong>{{ roomId || '—' }}</strong></div>
+    </header>
+
+    <div class="join-content">
+      <div class="join-icon">🃏</div>
+      <h1 class="join-title">Planning Poker</h1>
+      <p class="join-subtitle">Elige tu participante para votar</p>
+
+      <div class="error-banner" *ngIf="errorMsg">
+        ⚠️ {{ errorMsg }}
+      </div>
+
+      <div class="loading-state" *ngIf="loadingRoom && pokerService.availableParticipants.length === 0">
+        <span>⏳ Conectando y cargando participantes...</span>
+      </div>
+
+      <!-- Predefined Participants from Setup -->
+      <div class="predefined-section" *ngIf="pokerService.availableParticipants.length > 0">
+        <span class="section-title">Participantes de la Sala:</span>
+        <div class="predefined-grid">
+          <button 
+            *ngFor="let p of pokerService.availableParticipants"
+            class="predefined-card"
+            [disabled]="isParticipantTaken(p.name) || joining"
+            (click)="selectPredefined(p)">
+            <img [src]="getAvatar(p)" (error)="onAvatarError($event, p)" class="predefined-avatar" [alt]="p.name" />
+            <span class="predefined-name">{{ p.name }}</span>
+            <span class="taken-badge" *ngIf="isParticipantTaken(p.name)">Conectado</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="!loadingRoom && pokerService.availableParticipants.length === 0">
+        <span>No hay participantes configurados en esta sala.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ GAME / VOTING VIEW ════════ -->
+  <div class="game-screen" *ngIf="joined">
+    <!-- Top Bar -->
+    <header class="player-topbar glass-panel">
+      <div class="user-chip">
+        <img [src]="myAvatar" (error)="onSelfImgErr($event)" class="user-avatar" alt="avatar" />
+        <div class="user-meta">
+          <span class="user-name">{{ myName }}</span>
+          <button class="role-badge-btn" [class.spectator]="isSpectator" (click)="toggleSpectatorMode()" title="Cambiar rol">
+            {{ isSpectator ? '👁️ Observador' : '🃏 Votante' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="topbar-center-story" *ngIf="currentStory?.title">
+        <span class="story-mini-tag">HISTORIA</span>
+        <span class="story-mini-title">{{ currentStory?.title }}</span>
+      </div>
+
+      <div class="room-indicator">
+        <span>SALA</span>
+        <strong>{{ roomId }}</strong>
+      </div>
+    </header>
+
+    <!-- ════════ VIRTUAL POKER TABLE (PlanningPokerOnline style) ════════ -->
+    <div class="player-table-area">
+      <div class="poker-table-felt">
+        <div class="felt-inner-ring">
+          
+          <!-- Central Table Hub -->
+          <div class="table-center-hub">
+            <!-- Phase 1: Voting -->
+            <div *ngIf="!revealed" class="hub-voting-phase">
+              <span class="hub-badge">EN VOTACIÓN</span>
+              <h2 class="hub-story-title">{{ currentStory?.title || 'Esperando historia...' }}</h2>
+              
+              <div class="hub-progress-wrap">
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" [style.width.%]="votingProgressPercent"></div>
+                </div>
+                <span class="progress-lbl">{{ votedCount }} de {{ totalEligibleCount }} listos ({{ votingProgressPercent }}%)</span>
+              </div>
+
+              <button 
+                class="action-btn reveal-btn" 
+                (click)="revealCards()"
+                [disabled]="votedCount === 0">
+                👀 Revelar Cartas
+              </button>
+            </div>
+
+            <!-- Phase 2: Revealed Results & Distribution -->
+            <div *ngIf="revealed" class="hub-revealed-phase animate-pop">
+              <div class="hub-results-header">
+                <span class="hub-badge success">RESULTADOS</span>
+                <span class="consensus-chip" *ngIf="stats.isConsensus">
+                  🌟 ¡Consenso! ({{ stats.consensusValue }})
+                </span>
+              </div>
+
+              <!-- Quick Metrics -->
+              <div class="hub-metrics-row" *ngIf="stats">
+                <div class="metric-chip" *ngIf="stats.average !== null">
+                  <span class="m-lbl">Promedio:</span>
+                  <strong>{{ stats.average | number:'1.1-1' }}</strong>
+                </div>
+                <div class="metric-chip" *ngIf="stats.median !== null">
+                  <span class="m-lbl">Mediana:</span>
+                  <strong>{{ stats.median }}</strong>
+                </div>
+              </div>
+
+              <!-- Vote Distribution Chart -->
+              <div class="distribution-chart" *ngIf="stats.distribution.length > 0">
+                <div class="dist-chart-title">Distribución de Votos</div>
+                <div class="dist-bars-container">
+                  <div *ngFor="let item of stats.distribution" class="dist-row">
+                    <div class="dist-card-chip">{{ item.value }}</div>
+                    <div class="dist-bar-track">
+                      <div class="dist-bar-fill" [style.width.%]="item.percentage"></div>
+                    </div>
+                    <div class="dist-bar-stats">
+                      <strong>{{ item.count }}</strong>
+                      <span class="dist-pct">({{ item.percentage }}%)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Button for players -->
+              <div class="hub-action-controls">
+                <button class="action-btn secondary-btn" (click)="resetRound()">
+                  🔄 Nueva Ronda
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Players Seated Around the Table -->
+          <div class="table-seats-container">
+            <div 
+              *ngFor="let p of activeVoters" 
+              class="player-seat"
+              [class.is-me]="p.name === myName"
+              [class.voted]="p.hasVoted"
+              [class.revealed]="revealed">
+              
+              <!-- 3D Card on Felt -->
+              <div class="card-flipper" [class.flipped]="revealed && !!p.vote">
+                <!-- Card Back (Hidden) -->
+                <div class="card-face card-back" [class.has-voted]="p.hasVoted">
+                  <span class="status-icon">{{ p.hasVoted ? '✓' : '?' }}</span>
+                  <span class="back-text">{{ p.hasVoted ? 'Listo' : 'Pensando' }}</span>
+                </div>
+                <!-- Card Front (Revealed) -->
+                <div class="card-face card-front">
+                  <div class="poker-card-corner top-left">{{ p.vote }}</div>
+                  <div class="poker-card-center-val">{{ p.vote }}</div>
+                  <div class="poker-card-corner bottom-right">{{ p.vote }}</div>
+                </div>
+              </div>
+
+              <!-- Player Avatar & Name -->
+              <div class="player-info">
+                <div class="avatar-ring" [class.voted]="p.hasVoted">
+                  <img [src]="p.avatar" class="player-avatar" alt="avatar" />
+                  <span class="voted-check" *ngIf="p.hasVoted && !revealed">✓</span>
+                </div>
+                <span class="player-name">
+                  {{ p.name }} <strong *ngIf="p.name === myName" class="me-tag">(Tú)</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spectators strip if any -->
+      <div class="spectators-lounge" *ngIf="spectators.length > 0">
+        <span class="spectators-label">👁️ Observadores:</span>
+        <div class="spectator-chips">
+          <span *ngFor="let s of spectators" class="spectator-chip">
+            <img [src]="s.avatar" class="spec-mini-avatar" alt="avatar" />
+            <span class="spec-name">{{ s.name }} <em *ngIf="s.name === myName">(Tú)</em></span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ SPECTATOR NOTICE OR CARD DOCK ════════ -->
+    <div *ngIf="isSpectator" class="spectator-notice-bar glass-panel animate-pop">
+      <span class="notice-icon">👁️</span>
+      <div class="notice-text">
+        <strong>Modo Observador Activo</strong>
+        <p>Estás viendo la estimación en directo. Puedes cambiar a votante con el botón superior.</p>
+      </div>
+    </div>
+
+    <!-- ════════ DOCKED CARDS HAND (Choose your card) ════════ -->
+    <div *ngIf="!isSpectator" class="bottom-card-dock glass-panel">
+      <div class="dock-header">
+        <span class="dock-title">Elige tu carta:</span>
+        <div class="my-vote-indicator" *ngIf="myVote">
+          <span>Tu voto:</span>
+          <strong class="vote-badge">{{ myVote }}</strong>
+          <span class="vote-hint">(toca para cambiar)</span>
+        </div>
+        <div class="my-vote-indicator empty" *ngIf="!myVote">
+          <span>Ninguna carta seleccionada</span>
+        </div>
+      </div>
+
+      <!-- Horizontal Cards Hand -->
+      <div class="dock-cards-scroll" [class.disabled]="revealed">
+        <button 
+          *ngFor="let card of deckCards"
+          class="dock-card"
+          [class.selected]="myVote === card"
+          [disabled]="revealed"
+          (click)="castVote(card)">
+          <div class="dock-card-corner">{{ card }}</div>
+          <div class="dock-card-main">{{ card }}</div>
+          <div class="dock-card-corner bottom">{{ card }}</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Floating Live Reactions -->
+    <div class="reactions-bar glass-panel">
+      <span class="reactions-title">Reaccionar:</span>
+      <div class="reactions-btns">
+        <button 
+          *ngFor="let em of quickReactions"
+          class="reaction-btn"
+          [class.pop]="recentReaction === em"
+          (click)="sendReaction(em)">
+          {{ em }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

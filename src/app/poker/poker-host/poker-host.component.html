@@ -1,0 +1,389 @@
+<div class="poker-host-container animate-in">
+  <!-- ════════ HEADER ════════ -->
+  <header class="poker-header">
+    <div class="header-left">
+      <button class="glass-btn back-btn" (click)="goBack()">
+        <span>⬅️</span> <span>Volver</span>
+      </button>
+      <div class="room-pill" *ngIf="roomId">
+        <span class="pill-label">SALA</span>
+        <span class="pill-code">{{ roomId }}</span>
+        <button class="icon-btn" (click)="showQrModal = true" title="Ver Código QR">📱 QR</button>
+        <button class="icon-btn" (click)="copyLink()" title="Copiar Enlace">
+          {{ copied ? '✅ Copiado' : '🔗 Copiar Link' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Deck Selector Switch -->
+    <div class="deck-selector">
+      <button 
+        class="deck-tab" 
+        [class.active]="deckType === 'fibonacci'" 
+        (click)="switchDeck('fibonacci')">
+        🔢 Fibonacci
+      </button>
+      <button 
+        class="deck-tab" 
+        [class.active]="deckType === 'tshirt'" 
+        (click)="switchDeck('tshirt')">
+        👕 T-Shirt
+      </button>
+    </div>
+  </header>
+
+  <!-- ════════ CONSENSUS PARTY BANNER ════════ -->
+  <div class="consensus-banner animate-bounce" *ngIf="revealed && stats.isConsensus">
+    <span class="party-emoji">🎉</span>
+    <div class="party-text">
+      <h3>¡CONSENSO ABSOLUTO! ({{ stats.consensusValue }})</h3>
+      <p>Todo el equipo está perfectamente alineado sin discrepancias.</p>
+    </div>
+    <span class="party-emoji">🚀</span>
+  </div>
+
+  <!-- ════════ EXTREME DUEL OVERLAY ════════ -->
+  <div class="extreme-duel-card glass-panel animate-pop" *ngIf="revealed && stats.hasExtremeDuel && stats.duelists">
+    <div class="duel-header">
+      <span class="duel-vs-badge">⚔️ DUELO DE EXTREMOS ⚔️</span>
+      <span class="duel-timer">⏱️ Alegatos: {{ duelCountdown }}s</span>
+    </div>
+    <div class="duel-contenders">
+      <div class="contender low">
+        <span class="contender-role">🌱 El Optimista</span>
+        <strong class="contender-name">{{ stats.duelists.low.name }}</strong>
+        <div class="contender-card">{{ stats.duelists.low.vote }}</div>
+        <p class="contender-quote">"Esto sale fácil"</p>
+      </div>
+      <div class="vs-divider">VS</div>
+      <div class="contender high">
+        <span class="contender-role">🛡️ El Prudente</span>
+        <strong class="contender-name">{{ stats.duelists.high.name }}</strong>
+        <div class="contender-card">{{ stats.duelists.high.vote }}</div>
+        <p class="contender-quote">"Hay dragones ocultos"</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TABLE AREA / PLAYERS ════════ -->
+  <section class="table-area glass-panel">
+    <div class="table-stats-bar">
+      <div class="count-indicator">
+        👥 Participantes: <strong>{{ players.length }}</strong>
+        <span class="voted-tag" *ngIf="totalEligibleCount > 0">({{ votedCount }}/{{ totalEligibleCount }} listos)</span>
+        <span class="spectator-tag" *ngIf="spectators.length > 0">({{ spectators.length }} observador{{ spectators.length > 1 ? 'es' : '' }})</span>
+      </div>
+
+      <!-- Quick Metrics when revealed -->
+      <div class="metrics-wrap" *ngIf="revealed && stats">
+        <div class="metric-pill" *ngIf="stats.average !== null">
+          <span class="m-label">Promedio:</span>
+          <strong class="m-val">{{ stats.average | number:'1.1-1' }}</strong>
+        </div>
+        <div class="metric-pill" *ngIf="stats.median !== null">
+          <span class="m-label">Mediana:</span>
+          <strong class="m-val">{{ stats.median }}</strong>
+        </div>
+        <div class="metric-pill" *ngIf="stats.mode !== null">
+          <span class="m-label">Moda:</span>
+          <strong class="m-val">{{ stats.mode }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty Table Lobby State: Show QR directly so players can scan immediately -->
+    <div *ngIf="players.length === 0" class="empty-table-lobby">
+      <div class="lobby-qr-card">
+        <div class="room-badge-banner">
+          <span class="room-lbl">SALA</span>
+          <span class="room-val">{{ roomId }}</span>
+        </div>
+
+        <div class="qr-box" *ngIf="qrDataUrl">
+          <img [src]="qrDataUrl" alt="Código QR de la sala" class="main-qr-img" />
+        </div>
+        <div class="qr-loading" *ngIf="!qrDataUrl">
+          <div class="spinner"></div>
+          <span>Generando código QR...</span>
+        </div>
+
+        <p class="qr-instruction">
+          📱 Escanea con tu móvil o comparte el enlace para unirte
+        </p>
+
+        <div class="qr-url-box">
+          <span class="url-text">{{ joinUrl }}</span>
+          <button class="glass-btn copy-url-btn" (click)="copyLink()" title="Copiar enlace">
+            {{ copied ? '✅ ¡Copiado!' : '📋 Copiar Enlace' }}
+          </button>
+        </div>
+
+        <!-- Helper for local testing on mobile device -->
+        <div *ngIf="isLocalHost()" class="local-ip-helper">
+          <span class="ip-helper-title">¿Móvil en la misma red WiFi?</span>
+          <span class="ip-helper-desc">Si el móvil no conecta a localhost, ingresa tu IP local:</span>
+          <input 
+            type="text" 
+            [(ngModel)]="customIp" 
+            (ngModelChange)="onIpChange()" 
+            placeholder="Ej: 192.168.1.15" 
+            class="glass-input ip-input" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ VIRTUAL POKER TABLE FELT ════════ -->
+    <div *ngIf="players.length > 0" class="poker-table-felt">
+      <div class="felt-inner-ring">
+        <!-- Center Hub of the Table -->
+        <div class="table-center-hub">
+          <!-- State 1: Voting In Progress -->
+          <div *ngIf="!revealed" class="hub-voting-phase">
+            <span class="hub-badge">ESTIMACIÓN EN CURSO</span>
+            <h3 class="hub-story-title">{{ currentStory?.title || 'Esperando historia...' }}</h3>
+            
+            <div class="hub-progress-ring">
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" [style.width.%]="votingProgressPercent"></div>
+              </div>
+              <span class="progress-text">{{ votedCount }} de {{ totalEligibleCount }} votos emitidos ({{ votingProgressPercent }}%)</span>
+            </div>
+
+            <button 
+              class="action-btn reveal-btn glow-btn" 
+              (click)="revealCards()"
+              [disabled]="votedCount === 0">
+              👀 Revelar Cartas
+            </button>
+          </div>
+
+          <!-- State 2: Cards Revealed (PlanningPokerOnline Results & Distribution) -->
+          <div *ngIf="revealed" class="hub-revealed-phase animate-pop">
+            <div class="hub-results-header">
+              <span class="hub-badge success">CARTAS REVELADAS</span>
+              <div class="consensus-pill" *ngIf="stats.isConsensus">
+                🌟 ¡Consenso en {{ stats.consensusValue }}!
+              </div>
+            </div>
+
+            <!-- Vote Distribution Breakdown Chart -->
+            <div class="distribution-chart" *ngIf="stats.distribution.length > 0">
+              <div class="dist-chart-title">Distribución de Votos</div>
+              <div class="dist-bars-container">
+                <div *ngFor="let item of stats.distribution" class="dist-row">
+                  <div class="dist-card-chip">{{ item.value }}</div>
+                  <div class="dist-bar-track">
+                    <div class="dist-bar-fill" [style.width.%]="item.percentage"></div>
+                  </div>
+                  <div class="dist-bar-stats">
+                    <span class="dist-count">{{ item.count }}</span>
+                    <span class="dist-pct">({{ item.percentage }}%)</span>
+                  </div>
+                  <div class="dist-voters-pill" [title]="item.voters.join(', ')">
+                    {{ item.voters.join(', ') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Controls in Hub -->
+            <div class="hub-action-controls">
+              <button class="action-btn secondary-btn" (click)="resetRound()">
+                🔄 Nueva Ronda
+              </button>
+              <button class="action-btn roulette-btn" (click)="openRouletteModal()">
+                🎰 Ruleta
+              </button>
+            </div>
+
+            <!-- Settle options pills -->
+            <div class="settle-group">
+              <span class="settle-label">Fijar estimación:</span>
+              <div class="settle-chips">
+                <button 
+                  *ngFor="let card of deckCards" 
+                  class="settle-card-btn"
+                  [class.selected]="currentStory?.estimate === card"
+                  (click)="settleCurrentStory(card)">
+                  {{ card }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seats Around the Table -->
+        <div class="table-seats-container">
+          <div 
+            *ngFor="let p of activeVoters" 
+            class="player-seat"
+            [class.voted]="p.hasVoted"
+            [class.revealed]="revealed">
+            
+            <!-- 3D Card on the Felt -->
+            <div class="card-flipper" [class.flipped]="revealed && !!p.vote">
+              <!-- Back Face (Hidden Vote or Waiting) -->
+              <div class="card-face card-back" [class.has-voted]="p.hasVoted">
+                <div class="card-back-pattern">
+                  <span class="status-icon">{{ p.hasVoted ? '✓' : '?' }}</span>
+                </div>
+                <span class="back-text">{{ p.hasVoted ? 'Listo' : 'Pensando' }}</span>
+              </div>
+              <!-- Front Face (Revealed Vote) -->
+              <div class="card-face card-front">
+                <div class="poker-card-corner top-left">{{ p.vote }}</div>
+                <div class="poker-card-center-val">{{ p.vote }}</div>
+                <div class="poker-card-corner bottom-right">{{ p.vote }}</div>
+              </div>
+            </div>
+
+            <!-- Player Avatar & Name outside card -->
+            <div class="player-info">
+              <div class="avatar-ring" [class.voted]="p.hasVoted">
+                <img [src]="p.avatar" class="player-avatar" alt="avatar" />
+                <span class="voted-check" *ngIf="p.hasVoted && !revealed">✓</span>
+              </div>
+              <span class="player-name">{{ p.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spectators Lounge (if any) -->
+    <div class="spectators-lounge" *ngIf="spectators.length > 0">
+      <span class="spectators-label">👁️ Observadores:</span>
+      <div class="spectator-chips">
+        <span *ngFor="let s of spectators" class="spectator-chip">
+          <img [src]="s.avatar" class="spec-mini-avatar" alt="avatar" />
+          <span class="spec-name">{{ s.name }}</span>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ STORY BANNER & TABS ════════ -->
+  <section class="story-section glass-panel">
+    <div class="story-header">
+      <div class="story-info">
+        <span class="story-tag">HISTORIA ACTIVA</span>
+        <h2 class="story-title">{{ currentStory?.title || 'Sin historias definidas' }}</h2>
+      </div>
+      <div class="story-estimate-badge" *ngIf="currentStory?.estimate">
+        <span>Estimación Acordada:</span>
+        <strong class="est-val">{{ currentStory?.estimate }}</strong>
+      </div>
+    </div>
+
+    <!-- Stories List & Quick Add (Vertical) -->
+    <div class="stories-vertical-container">
+      <div class="story-add-group">
+        <input 
+          type="text" 
+          class="glass-input sm" 
+          [(ngModel)]="newStoryTitle" 
+          (keyup.enter)="addStory()"
+          placeholder="Añadir nueva historia / ticket..." 
+        />
+        <button class="glass-btn sm-btn" (click)="addStory()" [disabled]="!newStoryTitle.trim()">
+          + Añadir
+        </button>
+      </div>
+
+      <div class="stories-list-vertical">
+        <div 
+          *ngFor="let st of stories; let i = index"
+          class="story-item-vertical"
+          [class.active]="i === currentStoryIndex"
+          (click)="selectStory(i)">
+          <div class="story-item-left">
+            <span class="story-idx-badge">#{{ i + 1 }}</span>
+            <span class="story-item-title">{{ st.title }}</span>
+          </div>
+          <div class="story-item-right">
+            <span class="story-active-pill" *ngIf="i === currentStoryIndex">Activa</span>
+            <span class="story-item-est" *ngIf="st.estimate">{{ st.estimate }}</span>
+            <button 
+              class="story-delete-btn" 
+              (click)="deleteStory(i, $event)" 
+              title="Eliminar historia">
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FLOATING REACTIONS OVERLAY ════════ -->
+  <div class="reactions-container">
+    <div 
+      *ngFor="let r of floatingReactions" 
+      class="floating-emoji"
+      [style.left.%]="r.leftPercent">
+      <span class="emoji-char">{{ r.emoji }}</span>
+      <span class="emoji-author">{{ r.playerName }}</span>
+    </div>
+  </div>
+
+  <!-- ════════ QR MODAL ════════ -->
+  <div class="modal-backdrop" *ngIf="showQrModal" (click)="showQrModal = false">
+    <div class="modal-card glass-panel" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Únete a la mesa de Poker</h3>
+        <button class="close-btn" (click)="showQrModal = false">✕</button>
+      </div>
+      <div class="modal-body">
+        <img [src]="qrDataUrl" alt="QR Code" class="qr-image" *ngIf="qrDataUrl" />
+        <p class="modal-code">Código de Sala: <strong>{{ roomId }}</strong></p>
+        <input type="text" class="glass-input readonly-input" [value]="joinUrl" readonly />
+        <button class="glass-btn cta-copy" (click)="copyLink()">
+          {{ copied ? '✅ Enlace Copiado' : '📋 Copiar Enlace Directo' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TIE-BREAKER ROULETTE MODAL ════════ -->
+  <div class="modal-backdrop" *ngIf="showRouletteModal" (click)="closeRouletteModal()">
+    <div class="modal-card glass-panel roulette-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🎰 Ruleta de Desempate</h3>
+        <button class="close-btn" (click)="closeRouletteModal()">✕</button>
+      </div>
+      <div class="modal-body roulette-body">
+        <p class="roulette-subtitle">Deja que el azar decida entre las estimaciones en disputa:</p>
+        
+        <div class="roulette-wheel-container">
+          <div 
+            class="roulette-wheel"
+            [style.transform]="'rotate(' + rouletteRotation + 'deg)'">
+            <div 
+              *ngFor="let item of rouletteItems; let i = index" 
+              class="wheel-slice"
+              [style.transform]="'rotate(' + (i * (360 / rouletteItems.length)) + 'deg)'">
+              <span class="slice-text">{{ item }}</span>
+            </div>
+          </div>
+          <div class="wheel-pointer">🔻</div>
+        </div>
+
+        <div class="wheel-actions">
+          <button 
+            class="action-btn spin-btn" 
+            (click)="spinRoulette()"
+            [disabled]="isRouletteSpinning">
+            {{ isRouletteSpinning ? '¡Girando...!' : '🎯 Girar Ruleta' }}
+          </button>
+        </div>
+
+        <div class="roulette-winner-banner animate-bounce" *ngIf="rouletteWinner">
+          <span>¡Resultado Elegido: <strong>{{ rouletteWinner }}</strong>!</span>
+          <button class="glass-btn select-winner-btn" (click)="applyRouletteWinner()">
+            Aceptar Estimación
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

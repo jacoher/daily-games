@@ -106,7 +106,7 @@ export class TriviaService {
     }
     const serverUrl = this.getServerUrl();
     this.socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       reconnectionAttempts: 5
     });
 

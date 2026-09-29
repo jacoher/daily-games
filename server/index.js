@@ -27,6 +27,7 @@ const PORT = process.env.PORT || 3001;
 
 // Memory storage for active rooms
 const rooms = new Map();
+const pokerRooms = new Map();
 
 function generateRoomId() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -38,6 +39,320 @@ function generateRoomId() {
 }
 
 io.on('connection', (socket) => {
+  // ══════════════════════════════════════════════════
+  // PLANNING POKER SOCKET HANDLERS
+  // ══════════════════════════════════════════════════
+
+  // Host creates poker room
+  socket.on('poker:create-room', ({ deckType, participants, stories }, callback) => {
+    const roomId = generateRoomId();
+    const pokerRoom = {
+      id: roomId,
+      hostSocketId: socket.id,
+      deckType: deckType || 'fibonacci',
+      stories: stories && stories.length > 0 ? stories : [{ id: '1', title: 'Historia inicial / Tarea 1' }],
+      currentStoryIndex: 0,
+      revealed: false,
+      players: new Map(), // name -> { socketId, name, avatar, vote, hasVoted, connected }
+      availableParticipants: participants || []
+    };
+
+    pokerRooms.set(roomId, pokerRoom);
+    socket.join(roomId);
+
+    if (callback) {
+      callback({
+        success: true,
+        roomId,
+        room: serializePokerRoom(pokerRoom)
+      });
+    }
+  });
+
+  // Get poker room info (participants, players, deck, etc.)
+  socket.on('poker:get-info', ({ roomId }, callback) => {
+    const cleanId = (roomId || '').trim().toUpperCase();
+    const room = pokerRooms.get(cleanId);
+
+    if (!room) {
+      if (callback) callback({ success: false, message: 'Sala de Poker no encontrada' });
+      return;
+    }
+
+    socket.join(room.id);
+
+    if (callback) {
+      callback({
+        success: true,
+        roomId: room.id,
+        deckType: room.deckType,
+        stories: room.stories,
+        currentStoryIndex: room.currentStoryIndex,
+        participants: room.availableParticipants || [],
+        players: Array.from(room.players.values()).map(p => ({
+          ...p,
+          vote: room.revealed ? p.vote : (p.hasVoted ? 'hidden' : null)
+        }))
+      });
+    }
+  });
+
+  // Player joins poker room
+  socket.on('poker:join-room', ({ roomId, name, avatar, isSpectator }, callback) => {
+    const cleanId = (roomId || '').trim().toUpperCase();
+    const room = pokerRooms.get(cleanId);
+
+    if (!room) {
+      if (callback) callback({ success: false, message: 'Sala de Poker no encontrada' });
+      return;
+    }
+
+    const trimmedName = (name || '').trim();
+    if (!trimmedName) {
+      if (callback) callback({ success: false, message: 'El nombre es obligatorio' });
+      return;
+    }
+
+    let player = room.players.get(trimmedName);
+    if (player) {
+      // Reconnection
+      player.socketId = socket.id;
+      player.connected = true;
+      if (avatar) player.avatar = avatar;
+      if (typeof isSpectator === 'boolean') {
+        player.isSpectator = isSpectator;
+        if (player.isSpectator) {
+          player.vote = null;
+          player.hasVoted = false;
+        }
+      }
+    } else {
+      player = {
+        socketId: socket.id,
+        name: trimmedName,
+        avatar: avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(trimmedName)}`,
+        vote: null,
+        hasVoted: false,
+        connected: true,
+        isSpectator: !!isSpectator
+      };
+      room.players.set(trimmedName, player);
+    }
+
+    socket.join(room.id);
+
+    // Notify room of player update
+    io.to(room.id).emit('poker:players-update', Array.from(room.players.values()).map(p => ({
+      ...p,
+      vote: room.revealed ? p.vote : (p.hasVoted ? 'hidden' : null)
+    })));
+
+    if (callback) {
+      callback({
+        success: true,
+        roomId: room.id,
+        room: serializePokerRoom(pokerRoomForPlayer(room, socket.id)),
+        player
+      });
+    }
+  });
+
+  // Toggle spectator mode
+  socket.on('poker:toggle-spectator', ({ roomId, isSpectator }, callback) => {
+    const room = pokerRooms.get(roomId);
+    if (!room) return;
+
+    let targetPlayer = null;
+    for (const player of room.players.values()) {
+      if (player.socketId === socket.id) {
+        player.isSpectator = !!isSpectator;
+        if (player.isSpectator) {
+          player.vote = null;
+          player.hasVoted = false;
+        }
+        targetPlayer = player;
+        break;
+      }
+    }
+
+    const playerList = Array.from(room.players.values());
+    const payload = playerList.map(p => ({
+      ...p,
+      vote: room.revealed ? p.vote : (p.hasVoted ? 'hidden' : null)
+    }));
+
+    if (room.revealed) {
+      io.to(room.id).emit('poker:revealed', {
+        players: playerList,
+        currentStory: room.stories[room.currentStoryIndex]
+      });
+    } else {
+      io.to(room.id).emit('poker:players-update', payload);
+    }
+
+    if (callback) callback({ success: true, isSpectator: !!isSpectator, player: targetPlayer });
+  });
+
+  // Player votes
+  socket.on('poker:vote', ({ roomId, vote }, callback) => {
+    const room = pokerRooms.get(roomId);
+    if (!room || room.revealed) return;
+
+    for (const player of room.players.values()) {
+      if (player.socketId === socket.id) {
+        if (player.isSpectator) return; // Spectators cannot vote
+        player.vote = vote;
+        player.hasVoted = !!vote;
+        break;
+      }
+    }
+
+    // Broadcast updated player states without revealing values
+    io.to(room.id).emit('poker:players-update', Array.from(room.players.values()).map(p => ({
+      ...p,
+      vote: p.hasVoted ? 'hidden' : null
+    })));
+
+    if (callback) callback({ success: true });
+  });
+
+  // Host or authorized player reveals cards
+  socket.on('poker:reveal', ({ roomId }) => {
+    const room = pokerRooms.get(roomId);
+    if (!room) return;
+    const isHost = room.hostSocketId === socket.id;
+    const isPlayer = Array.from(room.players.values()).some(p => p.socketId === socket.id);
+    if (!isHost && !isPlayer) return;
+
+    room.revealed = true;
+    io.to(room.id).emit('poker:revealed', {
+      players: Array.from(room.players.values()),
+      currentStory: room.stories[room.currentStoryIndex]
+    });
+  });
+
+  // Host or authorized player resets round (revote or next)
+  socket.on('poker:reset', ({ roomId }) => {
+    const room = pokerRooms.get(roomId);
+    if (!room) return;
+    const isHost = room.hostSocketId === socket.id;
+    const isPlayer = Array.from(room.players.values()).some(p => p.socketId === socket.id);
+    if (!isHost && !isPlayer) return;
+
+    room.revealed = false;
+    for (const player of room.players.values()) {
+      player.vote = null;
+      player.hasVoted = false;
+    }
+
+    io.to(room.id).emit('poker:round-reset', {
+      players: Array.from(room.players.values()),
+      currentStory: room.stories[room.currentStoryIndex]
+    });
+  });
+
+  // Host changes active deck
+  socket.on('poker:select-deck', ({ roomId, deckType }) => {
+    const room = pokerRooms.get(roomId);
+    if (!room || room.hostSocketId !== socket.id) return;
+
+    room.deckType = deckType;
+    room.revealed = false;
+    for (const player of room.players.values()) {
+      player.vote = null;
+      player.hasVoted = false;
+    }
+
+    io.to(room.id).emit('poker:deck-updated', {
+      deckType: room.deckType,
+      players: Array.from(room.players.values())
+    });
+  });
+
+  // Host sets or changes stories
+  socket.on('poker:set-stories', ({ roomId, stories, currentStoryIndex }) => {
+    const room = pokerRooms.get(roomId);
+    if (!room || room.hostSocketId !== socket.id) return;
+
+    if (stories) room.stories = stories;
+    if (typeof currentStoryIndex === 'number') room.currentStoryIndex = currentStoryIndex;
+
+    room.revealed = false;
+    for (const player of room.players.values()) {
+      player.vote = null;
+      player.hasVoted = false;
+    }
+
+    io.to(room.id).emit('poker:stories-updated', {
+      stories: room.stories,
+      currentStoryIndex: room.currentStoryIndex,
+      players: Array.from(room.players.values())
+    });
+  });
+
+  // Settle story estimate
+  socket.on('poker:settle-estimate', ({ roomId, estimate }) => {
+    const room = pokerRooms.get(roomId);
+    if (!room || room.hostSocketId !== socket.id) return;
+
+    if (room.stories[room.currentStoryIndex]) {
+      room.stories[room.currentStoryIndex].estimate = estimate;
+    }
+
+    io.to(room.id).emit('poker:estimate-settled', {
+      story: room.stories[room.currentStoryIndex],
+      stories: room.stories
+    });
+  });
+
+  // Real-time floating reaction
+  socket.on('poker:reaction', ({ roomId, emoji, playerName }) => {
+    const room = pokerRooms.get(roomId);
+    if (!room) return;
+    io.to(room.id).emit('poker:reaction', { emoji, playerName, timestamp: Date.now() });
+  });
+
+  socket.on('disconnect', () => {
+    // Check trivia rooms
+    for (const [roomId, room] of rooms.entries()) {
+      if (room.hostSocketId === socket.id) {
+        clearInterval(room.timerInterval);
+        io.to(roomId).emit('room:closed', { message: 'El anfitrión cerró la partida' });
+        rooms.delete(roomId);
+      } else if (room.players.has(socket.id)) {
+        room.players.delete(socket.id);
+        io.to(roomId).emit('room:players-update', Array.from(room.players.values()));
+
+        if (
+          !room.isRevealed &&
+          room.currentQuestionIndex >= 0 &&
+          room.players.size > 0 &&
+          room.currentAnswers.size >= room.players.size
+        ) {
+          revealRound(room);
+        }
+      }
+    }
+
+    // Check poker rooms
+    for (const [roomId, room] of pokerRooms.entries()) {
+      if (room.hostSocketId === socket.id) {
+        io.to(roomId).emit('poker:room-closed', { message: 'El anfitrión cerró la mesa de Planning Poker' });
+        pokerRooms.delete(roomId);
+      } else {
+        for (const player of room.players.values()) {
+          if (player.socketId === socket.id) {
+            player.connected = false;
+            io.to(roomId).emit('poker:players-update', Array.from(room.players.values()).map(p => ({
+              ...p,
+              vote: room.revealed ? p.vote : (p.hasVoted ? 'hidden' : null)
+            })));
+            break;
+          }
+        }
+      }
+    }
+  });
   // Host creates a room
   socket.on('host:create-room', ({ category, timeLimit, questionCount, questions, participants }, callback) => {
     const roomId = generateRoomId();
@@ -309,6 +624,36 @@ function endGame(room) {
   }, 10 * 60 * 1000);
 }
 
-server.listen(PORT, '0.0.0.0', () => {
+function serializePokerRoom(room) {
+  return {
+    id: room.id,
+    deckType: room.deckType,
+    stories: room.stories,
+    currentStoryIndex: room.currentStoryIndex,
+    revealed: room.revealed,
+    players: Array.from(room.players.values()).map(p => ({
+      ...p,
+      vote: room.revealed ? p.vote : (p.hasVoted ? 'hidden' : null)
+    })),
+    availableParticipants: room.availableParticipants
+  };
+}
+
+function pokerRoomForPlayer(room, socketId) {
+  const serialized = serializePokerRoom(room);
+  // Ensure the requesting player can see their own vote even before reveal
+  const player = room.players.get(
+    Array.from(room.players.values()).find(p => p.socketId === socketId)?.name
+  );
+  if (player && !room.revealed && player.vote) {
+    const target = serialized.players.find(p => p.name === player.name);
+    if (target) target.vote = player.vote;
+  }
+  return serialized;
+}
+
+
+server.listen(PORT, () => {
   console.log(`Trivia Socket Server running on port ${PORT}`);
 });
+
