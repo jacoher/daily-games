@@ -90,8 +90,25 @@ export class PokerHostComponent implements OnInit, OnDestroy {
     return this.stories[this.currentStoryIndex];
   }
 
+  get activeVoters(): PokerPlayer[] {
+    return this.players.filter(p => !p.isSpectator);
+  }
+
+  get spectators(): PokerPlayer[] {
+    return this.players.filter(p => p.isSpectator);
+  }
+
   get votedCount(): number {
-    return this.players.filter(p => p.hasVoted).length;
+    return this.activeVoters.filter(p => p.hasVoted).length;
+  }
+
+  get totalEligibleCount(): number {
+    return this.activeVoters.length;
+  }
+
+  get votingProgressPercent(): number {
+    if (this.totalEligibleCount === 0) return 0;
+    return Math.round((this.votedCount / this.totalEligibleCount) * 100);
   }
 
   get deckCards(): string[] {
