@@ -133,9 +133,45 @@
 
     <!-- Players Cards Grid -->
     <div class="players-grid">
-      <div *ngIf="players.length === 0" class="empty-table">
-        <span class="empty-icon">🪑</span>
-        <p>Mesa vacía. Esperando que los miembros del equipo se unan con el código o QR.</p>
+      <!-- Empty Table Lobby State: Show QR directly so players can scan immediately -->
+      <div *ngIf="players.length === 0" class="empty-table-lobby">
+        <div class="lobby-qr-card">
+          <div class="room-badge-banner">
+            <span class="room-lbl">SALA</span>
+            <span class="room-val">{{ roomId }}</span>
+          </div>
+
+          <div class="qr-box" *ngIf="qrDataUrl">
+            <img [src]="qrDataUrl" alt="Código QR de la sala" class="main-qr-img" />
+          </div>
+          <div class="qr-loading" *ngIf="!qrDataUrl">
+            <div class="spinner"></div>
+            <span>Generando código QR...</span>
+          </div>
+
+          <p class="qr-instruction">
+            📱 Escanea con tu móvil o comparte el enlace para unirte
+          </p>
+
+          <div class="qr-url-box">
+            <span class="url-text">{{ joinUrl }}</span>
+            <button class="glass-btn copy-url-btn" (click)="copyLink()" title="Copiar enlace">
+              {{ copied ? '✅ ¡Copiado!' : '📋 Copiar Enlace' }}
+            </button>
+          </div>
+
+          <!-- Helper for local testing on mobile device -->
+          <div *ngIf="isLocalHost()" class="local-ip-helper">
+            <span class="ip-helper-title">¿Móvil en la misma red WiFi?</span>
+            <span class="ip-helper-desc">Si el móvil no conecta a localhost, ingresa tu IP local:</span>
+            <input 
+              type="text" 
+              [(ngModel)]="customIp" 
+              (ngModelChange)="onIpChange()" 
+              placeholder="Ej: 192.168.1.15" 
+              class="glass-input ip-input" />
+          </div>
+        </div>
       </div>
 
       <div 

@@ -53,6 +53,7 @@ export class PokerHostComponent implements OnInit, OnDestroy {
   // QR & Joining
   qrDataUrl = '';
   joinUrl = '';
+  customIp = '';
   showQrModal = false;
   copied = false;
 
@@ -102,6 +103,17 @@ export class PokerHostComponent implements OnInit, OnDestroy {
       name: p.name,
       avatarUrl: p.avatarUrl
     }));
+
+    if (this.isLocalHost()) {
+      this.detectLocalIP().then(ip => {
+        if (ip && ip !== this.customIp) {
+          this.customIp = ip;
+          if (this.roomId) {
+            this.buildQR(this.roomId);
+          }
+        }
+      });
+    }
 
     this.subs.push(
       this.pokerService.roomId$.subscribe(id => {
@@ -340,18 +352,75 @@ export class PokerHostComponent implements OnInit, OnDestroy {
     this.closeRouletteModal();
   }
 
+  isLocalHost(): boolean {
+    const hostname = window.location.hostname || 'localhost';
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.endsWith('.local')
+    );
+  }
+
+  detectLocalIP(): Promise<string> {
+    return new Promise(resolve => {
+      try {
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        (pc as any).createDataChannel('');
+        pc.createOffer().then(o => pc.setLocalDescription(o));
+        const t = setTimeout(() => {
+          pc.close();
+          resolve(window.location.hostname);
+        }, 3000);
+        pc.onicecandidate = e => {
+          if (!e.candidate) return;
+          const m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+          if (m && !m[1].startsWith('127.')) {
+            clearTimeout(t);
+            pc.close();
+            resolve(m[1]);
+          }
+        };
+      } catch {
+        resolve(window.location.hostname);
+      }
+    });
+  }
+
+  async onIpChange() {
+    if (this.roomId) {
+      await this.buildQR(this.roomId);
+    }
+  }
+
   // --- QR & Copy Link ---
   private async buildQR(roomId: string) {
-    const loc = window.location;
-    const baseUrl = `${loc.protocol}//${loc.host}`;
-    this.joinUrl = `${baseUrl}/poker/play?room=${roomId}`;
+    let url = '';
+    const hostname = window.location.hostname;
+
+    if (hostname.includes('github.io') || hostname.includes('jacoher.github.io')) {
+      url = `https://jacoher.github.io/daily-games/poker/play?room=${roomId}`;
+    } else if (this.isLocalHost()) {
+      const port = window.location.port ? `:${window.location.port}` : ':4200';
+      const host = this.customIp || hostname || 'localhost';
+      url = `http://${host}${port}/poker/play?room=${roomId}`;
+    } else {
+      const portStr = window.location.port ? `:${window.location.port}` : '';
+      const protocol = window.location.protocol || 'https:';
+      const host = this.customIp && this.customIp !== hostname ? this.customIp : hostname;
+      url = `${protocol}//${host}${portStr}/poker/play?room=${roomId}`;
+    }
+
+    this.joinUrl = url;
 
     try {
       this.qrDataUrl = await QRCode.toDataURL(this.joinUrl, {
-        width: 280,
+        width: 240,
         margin: 2,
         color: { dark: '#000000', light: '#ffffff' }
       });
+      this.cdr.markForCheck();
     } catch (err) {
       console.error('Error generating QR:', err);
     }
@@ -360,7 +429,11 @@ export class PokerHostComponent implements OnInit, OnDestroy {
   copyLink() {
     navigator.clipboard.writeText(this.joinUrl).then(() => {
       this.copied = true;
-      setTimeout(() => (this.copied = false), 2000);
+      this.cdr.markForCheck();
+      setTimeout(() => {
+        this.copied = false;
+        this.cdr.markForCheck();
+      }, 2000);
     });
   }
 }

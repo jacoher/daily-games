@@ -412,6 +412,144 @@
   margin-bottom: 0.5rem;
 }
 
+/* Empty Table Lobby QR Card */
+.empty-table-lobby {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 0;
+}
+
+.lobby-qr-card {
+  background: rgba(15, 12, 41, 0.7);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 20px;
+  padding: 1.5rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(168, 85, 247, 0.15);
+  max-width: 320px;
+  width: 100%;
+  backdrop-filter: blur(16px);
+  animation: fadeIn 0.4s ease-out;
+}
+
+.room-badge-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  padding: 0.3rem 0.9rem;
+  border-radius: 30px;
+}
+
+.room-lbl {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #c084fc;
+}
+
+.room-val {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #fff;
+  font-family: monospace;
+}
+
+.qr-box {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  display: inline-flex;
+}
+
+.main-qr-img {
+  width: 180px;
+  height: 180px;
+  display: block;
+}
+
+.qr-loading {
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.qr-instruction {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.qr-url-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.url-text {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  word-break: break-all;
+  text-align: center;
+}
+
+.copy-url-btn {
+  width: 100%;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  justify-content: center;
+}
+
+.local-ip-helper {
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.ip-helper-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ip-helper-desc {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.25;
+}
+
+.ip-input {
+  font-size: 0.8rem;
+  font-family: monospace;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+}
+
 .player-seat {
   display: flex;
   flex-direction: column;
