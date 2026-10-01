@@ -1,6 +1,6 @@
 export type PokerDeckType = 'fibonacci' | 'tshirt';
 
-export const FIBONACCI_CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
+export const FIBONACCI_CARDS = ['0.5', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
 export const TSHIRT_CARDS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '?', '☕'];
 
 export interface PokerPlayer {

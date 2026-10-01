@@ -411,20 +411,30 @@
   transition: all 0.2s;
 }
 
-.reveal-btn {
-  background: linear-gradient(135deg, #22c55e, #10b981);
-  color: #fff;
-  box-shadow: 0 4px 18px rgba(34, 197, 94, 0.4);
+.waiting-moderator-banner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1.25rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: center;
+  backdrop-filter: blur(8px);
 }
 
-.reveal-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(34, 197, 94, 0.5);
+.waiting-moderator-banner .wait-icon {
+  font-size: 1rem;
+  animation: spin 3s infinite linear;
 }
 
-.reveal-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .secondary-btn {

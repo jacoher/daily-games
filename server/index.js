@@ -216,13 +216,12 @@ io.on('connection', (socket) => {
     if (callback) callback({ success: true });
   });
 
-  // Host or authorized player reveals cards
+  // Host reveals cards (moderator only)
   socket.on('poker:reveal', ({ roomId }) => {
     const room = pokerRooms.get(roomId);
     if (!room) return;
     const isHost = room.hostSocketId === socket.id;
-    const isPlayer = Array.from(room.players.values()).some(p => p.socketId === socket.id);
-    if (!isHost && !isPlayer) return;
+    if (!isHost) return;
 
     room.revealed = true;
     io.to(room.id).emit('poker:revealed', {

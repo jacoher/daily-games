@@ -248,11 +248,6 @@ export class PokerPlayerComponent implements OnInit, OnDestroy {
     this.pokerService.toggleSpectator(next);
   }
 
-  revealCards() {
-    this.soundService.playTick();
-    this.pokerService.reveal();
-  }
-
   resetRound() {
     this.soundService.playTick();
     this.pokerService.reset();
