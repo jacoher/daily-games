@@ -85,12 +85,10 @@
                 <span class="progress-lbl">{{ votedCount }} de {{ totalEligibleCount }} listos ({{ votingProgressPercent }}%)</span>
               </div>
 
-              <button 
-                class="action-btn reveal-btn" 
-                (click)="revealCards()"
-                [disabled]="votedCount === 0">
-                👀 Revelar Cartas
-              </button>
+              <div class="waiting-moderator-banner">
+                <span class="wait-icon">⏳</span>
+                <span>Esperando que el moderador revele las cartas...</span>
+              </div>
             </div>
 
             <!-- Phase 2: Revealed Results & Distribution -->
